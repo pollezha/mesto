@@ -26,8 +26,8 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    // TODO(question): new — серверные переменные из «Инфраструктуры» (TELEGRAM_*, SMTP_*, MAIL_*)
-    // без префикса NUXT_ не переопределяют runtimeConfig в рантайме; см. docs/questions-log.md
+    // Серверные переменные (TELEGRAM_*, SMTP_*, MAIL_*) здесь не заводятся: без префикса NUXT_
+    // они не переопределяют runtimeConfig в рантайме. Их читает server/utils/env.ts (Н1).
     public: {
       siteUrl: '',
       analyticsEnabled: false,
