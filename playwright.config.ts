@@ -27,10 +27,13 @@ export default defineConfig({
     },
   })),
   webServer: {
-    // Проверяем пререндеренную сборку, а не dev-сервер.
+    // Проверяем пререндеренную сборку, а не dev-сервер; MESTO_KIT=1 добавляет песочницу /__kit.
     command: 'npm run build && npm run preview',
+    env: { MESTO_KIT: '1' },
     url: `http://localhost:${PORT}`,
+    // Локально подхватывает уже запущенный сервер: `MESTO_KIT=1 npm run build && npm run preview`
+    // один раз, дальше тесты без пересборки.
     reuseExistingServer: !process.env.CI,
-    timeout: 300_000,
+    timeout: 600_000,
   },
 })
