@@ -1,0 +1,43 @@
+# Заготовка — docs «Инфраструктура» → «Деплой». Доводит агент devops.
+# push в main → линтер и сборка → два образа (стадии app и nginx) с тегом sha в GHCR →
+# по SSH на VPS: docker compose pull && docker compose up -d.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+
+  images:
+    needs: check
+    # TODO: включить, когда будут владелец GHCR и секреты
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # TODO: docker/login-action (ghcr.io), docker/build-push-action для target app и target nginx,
+      #       теги ghcr.io/<владелец>/mesto-app:${{ github.sha }} и ghcr.io/<владелец>/mesto-nginx:${{ github.sha }}
+
+  deploy:
+    needs: images
+    # TODO: включить, когда будут VPS и секреты SSH
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "TODO: SSH на VPS, IMAGE_TAG=${{ github.sha }} docker compose pull && docker compose up -d"

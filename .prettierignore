@@ -1,0 +1,12 @@
+docs/
+node_modules/
+.nuxt/
+.output/
+.data/
+.nitro/
+.cache/
+dist/
+playwright-report/
+test-results/
+screenshots/
+package-lock.json

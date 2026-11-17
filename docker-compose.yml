@@ -1,0 +1,35 @@
+# Заготовка — docs «Инфраструктура» → «Docker и Nginx», «Деплой». Доводит агент devops.
+# На VPS: docker compose pull && docker compose up -d. Откат — предыдущий тег образа.
+# TODO: владелец образов в GHCR и способ передачи тега (sha коммита) — при настройке деплоя.
+services:
+  app:
+    image: ghcr.io/OWNER/mesto-app:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    # Порт 3000 наружу не открывается: приложение доступно только через nginx.
+    expose:
+      - '3000'
+
+  nginx:
+    image: ghcr.io/OWNER/mesto-nginx:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    # TODO: выпуск и продление сертификата Let's Encrypt для mesto.studio и www.mesto.studio
+
+volumes:
+  certbot-etc:
+  certbot-www:
