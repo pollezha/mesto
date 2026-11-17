@@ -10,7 +10,8 @@ export default defineNuxtConfig({
 
   modules: ['@nuxtjs/i18n', '@nuxt/eslint', '@nuxt/test-utils/module'],
 
-  css: ['~/assets/tokens.css'],
+  // Токены первыми, затем глобальная база (шрифт, фокус, reduced motion).
+  css: ['~/assets/tokens.css', '~/assets/base.css'],
 
   i18n: {
     strategy: 'prefix_except_default',

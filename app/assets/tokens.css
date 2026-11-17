@@ -1,9 +1,395 @@
 /*
- * Токены — docs «Токены и стили». Имена: --color-*, --fs-*, --lh-*, --space-*, --radius-*
- * (правило — раздел «Имена CSS-переменных»). Значения переключаются медиазапросами
- * min-width 768 / 1024 / 1280 / 1440 / 1920 (раздел «Брейкпоинты», Р4).
- * TODO: заполнить из Kit Mesto (первый этап плана).
+ * Токены Kit Mesto как CSS-переменные.
+ * Источник значений — docs «Токены и стили» (выгрузка кита 31.10.2026), сверено с китом 17.11.2026:
+ * цвета и все стили текста — get_variable_defs на Foundation сайта (52:17890) и кита (0:1) на 6 ширинах;
+ * имена Spacing/Radius — поиск переменных кита (коллекция Numbers).
+ * Имена — правило «Имена CSS-переменных»: Brand Blue/500 → --color-blue-500, Spacing/24 → --space-24,
+ * font-size/h1 → --fs-h1; у стилей Text и Caption дефис перед номером: font-size/txt1 → --fs-txt-1,
+ * line-height/txt 1 → --lh-txt-1, font-size/caption 1 → --fs-caption-1 (решение владельца 18.11.2026, Н5).
+ * Адаптив ступенями, mobile-first (Р4): база — значения 380, затем min-width 768 / 1024 / 1280 / 1440 / 1920.
+ * Градиенты Diamond здесь не воспроизводятся — они картинки («Токены» → «Цвета»).
  */
+
 :root {
-  color-scheme: light;
+  /* ---------- Цвета (коллекция Primitives, одинаковы на всех ширинах) ---------- */
+  --color-blue-100: #d9daff; /* Brand Blue/100 */
+  --color-blue-300: #8994ff; /* Brand Blue/300 */
+  --color-blue-500: #2848ff; /* Brand Blue/500 */
+  --color-blue-600: #1b3bd0; /* Brand Blue/600 */
+  --color-blue-700: #0026b5; /* Brand Blue/700 */
+  --color-blue-900: #000c57; /* Brand Blue/900 */
+
+  --color-extra-white: #ffffff; /* Achromatic/ExtraWhite */
+  --color-white: #fdfdfd; /* Achromatic/White */
+  --color-gray-100: #f5f6f9; /* Achromatic/Gray 100 */
+  --color-gray-200: #e8e8e8; /* Achromatic/Gray 200 */
+  --color-gray-300: #d9d9d9; /* Achromatic/Gray 300 */
+  --color-gray-500: #adadad; /* Achromatic/Gray 500 */
+  --color-gray-700: #737373; /* Achromatic/Gray 700 */
+  --color-gray-800: #505050; /* Achromatic/Gray 800 — в макетах не используется */
+  --color-black: #202020; /* Achromatic/Black */
+
+  --color-white-a90: rgb(253 253 253 / 0.9); /* Alpha/White 90 — #FDFDFD 90% */
+  --color-white-a50: rgb(253 253 253 / 0.5); /* Alpha/White 50 — #FDFDFD 50% */
+  --color-black-a50: rgb(32 32 32 / 0.5); /* Alpha/Black 50 — #202020 50% */
+  --color-extra-white-a60: rgb(255 255 255 / 0.6); /* Alpha/ExtraWhite 60 — #FFFFFF 60% */
+
+  --color-error: #e9411f; /* System/Error */
+
+  /* ---------- Шрифт («Токены» → «Типографика») ---------- */
+  --font-family: 'Onest', sans-serif;
+  --fw-regular: 400; /* Text 1–4 (Regular) */
+  --fw-medium: 500; /* Heading 1–5, Caption 1–2 (Medium) */
+
+  /* ---------- Стили текста, Mobile (380) ---------- */
+  --fs-h1: 48px; /* font-size/h1 */
+  --lh-h1: 52px; /* line-height/h1 */
+  --fs-h2: 32px;
+  --lh-h2: 36px;
+  --fs-h3: 28px;
+  --lh-h3: 32px;
+  --fs-h4: 28px;
+  --lh-h4: 28px;
+  --fs-h5: 16px;
+  --lh-h5: 20px;
+  --fs-txt-1: 20px; /* font-size/txt1 */
+  --lh-txt-1: 24px; /* line-height/txt 1 (в ките с пробелом); имя с дефисом — Н5 */
+  --fs-txt-2: 24px;
+  --lh-txt-2: 32px;
+  --fs-txt-3: 16px;
+  --lh-txt-3: 20px;
+  --fs-txt-4: 12px;
+  --lh-txt-4: 16px;
+  --fs-caption-1: 14px; /* font-size/caption 1 */
+  --lh-caption-1: 18px; /* line-height/caption 1 */
+  --fs-caption-2: 12px;
+  --lh-caption-2: 16px;
+
+  /* ---------- Spacing, Mobile (380). Шкала немонотонна (40–80 = 10) — свойство кита ---------- */
+  --space-4: 4px;
+  --space-8: 4px;
+  --space-10: 10px;
+  --space-12: 4px;
+  --space-16: 4px;
+  --space-20: 8px;
+  --space-24: 12px;
+  --space-28: 16px;
+  --space-32: 20px;
+  --space-36: 24px;
+  --space-40: 10px;
+  --space-48: 10px;
+  --space-56: 10px;
+  --space-60: 10px;
+  --space-64: 10px;
+  --space-72: 48px;
+  --space-80: 10px;
+  --space-200: 120px;
+  --space-280: 240px;
+  --space-overlap: -160px; /* Spacing/Overlap */
+
+  /* ---------- Radius: одинаковые на всех ширинах ---------- */
+  --radius-4: 4px;
+  --radius-6: 6px;
+  --radius-8: 8px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-36: 36px;
+  --radius-max: 999px; /* Radius/Max */
+
+  /* ---------- Radius: по ширинам, Mobile (380) ---------- */
+  --radius-20: 10px;
+  --radius-24: 10px;
+  --radius-28: 20px;
+  --radius-40: 20px;
+  --radius-64: 40px;
+  --radius-header: 48px; /* Radius/Header */
+
+  /* ---------- Эффекты («Токены» → «Эффекты») ---------- */
+  /* Стекло навбара: фон --color-white-a90, радиус — из фрейма своей ширины («Компоненты» → NavBar). */
+  /* TODO(question): new Н4 — Figma (1:1482, 35:5014) отдаёт blur 7.653px и тень 0 6.802px 37.244px; здесь значения docs */
+  --blur-glass: 15px; /* docs «Токены» → «Эффекты»: backdrop-filter: blur(15px) */
+  --shadow-glass: 0 7px 37px rgb(15 15 33 / 0.1); /* docs «Токены» → «Эффекты» */
+
+  /* ---------- Контейнер (Р24) ---------- */
+  --container-max-width: 1920px; /* «Токены» → «Брейкпоинты», Р24 */
+}
+
+/* ---------- Tablet (768) ---------- */
+@media (min-width: 768px) {
+  :root {
+    --fs-h1: 52px;
+    --lh-h1: 56px;
+    --fs-h2: 38px;
+    --lh-h2: 44px;
+    --fs-h3: 36px;
+    --lh-h3: 42px;
+    --fs-h4: 30px;
+    --lh-h4: 34px;
+    --fs-h5: 24px;
+    --lh-h5: 28px;
+    --fs-txt-1: 28px;
+    --lh-txt-1: 34px;
+    --fs-txt-2: 26px;
+    --lh-txt-2: 30px;
+    --fs-txt-3: 18px;
+    --lh-txt-3: 22px;
+    --fs-txt-4: 16px;
+    --lh-txt-4: 20px;
+    --fs-caption-1: 18px;
+    --lh-caption-1: 22px;
+    --fs-caption-2: 16px;
+    --lh-caption-2: 20px;
+
+    --space-4: 2px;
+    --space-8: 5px;
+    --space-10: 10px;
+    --space-12: 7px;
+    --space-16: 10px;
+    --space-20: 12px;
+    --space-24: 14px;
+    --space-28: 17px;
+    --space-32: 19px;
+    --space-36: 22px;
+    --space-40: 24px;
+    --space-48: 29px;
+    --space-56: 34px;
+    --space-60: 36px;
+    --space-64: 38px;
+    --space-72: 43px;
+    --space-80: 48px;
+    --space-200: 120px;
+    --space-280: 168px;
+    --space-overlap: -96px;
+
+    --radius-20: 12px;
+    --radius-24: 14px;
+    --radius-28: 17px;
+    --radius-40: 24px;
+    --radius-64: 38px;
+    --radius-header: 38px;
+  }
+}
+
+/* ---------- Tablet (1024) ---------- */
+@media (min-width: 1024px) {
+  :root {
+    --fs-h1: 56px;
+    --lh-h1: 60px;
+    --fs-h2: 44px;
+    --lh-h2: 50px;
+    --fs-h3: 40px;
+    --lh-h3: 46px;
+    --fs-h4: 34px;
+    --lh-h4: 38px;
+    --fs-h5: 28px;
+    --lh-h5: 32px;
+    --fs-txt-1: 36px;
+    --lh-txt-1: 42px;
+    --fs-txt-2: 28px;
+    --lh-txt-2: 32px;
+    --fs-txt-3: 20px;
+    --lh-txt-3: 24px;
+    --fs-txt-4: 16px;
+    --lh-txt-4: 20px;
+    --fs-caption-1: 22px;
+    --lh-caption-1: 26px;
+    --fs-caption-2: 18px;
+    --lh-caption-2: 22px;
+
+    --space-4: 3px;
+    --space-8: 5px;
+    --space-10: 10px;
+    --space-12: 8px;
+    --space-16: 10px;
+    --space-20: 13px;
+    --space-24: 16px;
+    --space-28: 18px;
+    --space-32: 21px;
+    --space-36: 23px;
+    --space-40: 26px;
+    --space-48: 31px;
+    --space-56: 36px;
+    --space-60: 39px;
+    --space-64: 42px;
+    --space-72: 47px;
+    --space-80: 52px;
+    --space-200: 130px;
+    --space-280: 182px;
+    --space-overlap: -104px;
+
+    --radius-20: 13px;
+    --radius-24: 16px;
+    --radius-28: 18px;
+    --radius-40: 26px;
+    --radius-64: 42px;
+    --radius-header: 42px;
+  }
+}
+
+/* ---------- Desktop (1280) ---------- */
+@media (min-width: 1280px) {
+  :root {
+    --fs-h1: 64px;
+    --lh-h1: 68px;
+    --fs-h2: 50px;
+    --lh-h2: 56px;
+    --fs-h3: 44px;
+    --lh-h3: 52px;
+    --fs-h4: 38px;
+    --lh-h4: 42px;
+    --fs-h5: 32px;
+    --lh-h5: 36px;
+    --fs-txt-1: 40px;
+    --lh-txt-1: 48px;
+    --fs-txt-2: 32px;
+    --lh-txt-2: 36px;
+    --fs-txt-3: 24px;
+    --lh-txt-3: 28px;
+    --fs-txt-4: 20px;
+    --lh-txt-4: 24px;
+    --fs-caption-1: 26px;
+    --lh-caption-1: 30px;
+    --fs-caption-2: 20px;
+    --lh-caption-2: 24px;
+
+    --space-4: 3px;
+    --space-8: 6px;
+    --space-10: 10px;
+    --space-12: 9px;
+    --space-16: 12px;
+    --space-20: 15px;
+    --space-24: 18px;
+    --space-28: 21px;
+    --space-32: 24px;
+    --space-36: 27px;
+    --space-40: 30px;
+    --space-48: 36px;
+    --space-56: 42px;
+    --space-60: 45px;
+    --space-64: 48px;
+    --space-72: 54px;
+    --space-80: 60px;
+    --space-200: 150px;
+    --space-280: 210px;
+    --space-overlap: -120px;
+
+    --radius-20: 15px;
+    --radius-24: 18px;
+    --radius-28: 21px;
+    --radius-40: 30px;
+    --radius-64: 48px;
+    --radius-header: 48px;
+  }
+}
+
+/* ---------- Desktop (1440) ---------- */
+@media (min-width: 1440px) {
+  :root {
+    --fs-h1: 68px;
+    --lh-h1: 72px;
+    --fs-h2: 54px;
+    --lh-h2: 60px;
+    --fs-h3: 48px;
+    --lh-h3: 56px;
+    --fs-h4: 42px;
+    --lh-h4: 46px;
+    --fs-h5: 36px;
+    --lh-h5: 40px;
+    --fs-txt-1: 44px;
+    --lh-txt-1: 52px;
+    --fs-txt-2: 34px;
+    --lh-txt-2: 38px;
+    --fs-txt-3: 26px;
+    --lh-txt-3: 30px;
+    --fs-txt-4: 20px;
+    --lh-txt-4: 24px;
+    --fs-caption-1: 28px;
+    --lh-caption-1: 32px;
+    --fs-caption-2: 22px;
+    --lh-caption-2: 26px;
+
+    --space-4: 3px;
+    --space-8: 6px;
+    --space-10: 10px;
+    --space-12: 10px;
+    --space-16: 13px;
+    --space-20: 16px;
+    --space-24: 19px;
+    --space-28: 22px;
+    --space-32: 26px;
+    --space-36: 29px;
+    --space-40: 32px;
+    --space-48: 38px;
+    --space-56: 45px;
+    --space-60: 48px;
+    --space-64: 51px;
+    --space-72: 58px;
+    --space-80: 64px;
+    --space-200: 160px;
+    --space-280: 224px;
+    --space-overlap: -128px;
+
+    --radius-20: 16px;
+    --radius-24: 19px;
+    --radius-28: 22px;
+    --radius-40: 32px;
+    --radius-64: 51px;
+    --radius-header: 51px;
+  }
+}
+
+/* ---------- Desktop (1920) ---------- */
+@media (min-width: 1920px) {
+  :root {
+    --fs-h1: 80px;
+    --lh-h1: 84px;
+    --fs-h2: 64px;
+    --lh-h2: 72px;
+    --fs-h3: 56px;
+    --lh-h3: 64px;
+    --fs-h4: 48px;
+    --lh-h4: 52px;
+    --fs-h5: 44px;
+    --lh-h5: 48px;
+    --fs-txt-1: 56px;
+    --lh-txt-1: 64px;
+    --fs-txt-2: 40px;
+    --lh-txt-2: 44px;
+    --fs-txt-3: 32px;
+    --lh-txt-3: 36px;
+    --fs-txt-4: 24px;
+    --lh-txt-4: 28px;
+    --fs-caption-1: 36px;
+    --lh-caption-1: 40px;
+    --fs-caption-2: 28px;
+    --lh-caption-2: 32px;
+
+    --space-4: 4px;
+    --space-8: 8px;
+    --space-10: 10px;
+    --space-12: 12px;
+    --space-16: 16px;
+    --space-20: 20px;
+    --space-24: 24px;
+    --space-28: 28px;
+    --space-32: 32px;
+    --space-36: 36px;
+    --space-40: 40px;
+    --space-48: 48px;
+    --space-56: 56px;
+    --space-60: 60px;
+    --space-64: 64px;
+    --space-72: 72px;
+    --space-80: 80px;
+    --space-200: 200px;
+    --space-280: 280px;
+    --space-overlap: -160px;
+
+    --radius-20: 20px;
+    --radius-24: 24px;
+    --radius-28: 28px;
+    --radius-40: 40px;
+    --radius-64: 64px;
+    --radius-header: 64px;
+  }
 }
