@@ -1,0 +1,9 @@
+# Всегда LF в репозитории и в рабочей копии на любой ОС (Docker, shell, Prettier).
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.webp binary
+*.avif binary
+*.woff2 binary
+*.ico binary
