@@ -1,5 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-// Стек и окружение — docs/…/package/07-*.md («Инфраструктура»).
+// Стек и окружение — docs/package/07-*.md («Инфраструктура»).
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   // Структура app/ + server/ в корне, как в «Инфраструктуре» → «Структура проекта».
