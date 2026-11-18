@@ -1,1 +1,281 @@
-{}
+{
+  "nav": {
+    "projects": "Projects",
+    "services": "Services",
+    "contacts": "Contacts"
+  },
+  "cta": {
+    "discuss": "Discuss a project",
+    "lead": {
+      "main": "To propose a project or discuss a collaboration,",
+      "muted": "fill out the form:"
+    },
+    "or": "Or email us:"
+  },
+  "lang": "RU / EN",
+  "tag": {
+    "soon": "soon"
+  },
+  "email": "hello{'@'}mesto.studio",
+  "form": {
+    "name": "Name*",
+    "contact": "Email or Telegram*",
+    "message": "Tell us briefly about your project",
+    "submit": "Discuss a project",
+    "required": "This field is required",
+    "success": "Thank you! Our manager will be in touch soon.",
+    "error": "Something went wrong. Please try again or email hello{'@'}mesto.studio"
+  },
+  "footer": {
+    "contacts": "Contacts",
+    "privacy": "Privacy Policy",
+    "cookies": "Cookie settings"
+  },
+  "cookie": {
+    "text": "We use cookies for analytics to improve the website. Learn more in our {privacy}",
+    "textLinks": {
+      "privacy": "Privacy Policy"
+    },
+    "accept": "Accept",
+    "decline": "Decline"
+  },
+  "document": {
+    "placeholder": "This document is being prepared"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "text": "This page doesn’t exist. Go back to the home page",
+    "button": "Back to home"
+  },
+  "home": {
+    "hero": "Full-service design studio: from brand identity to digital product development",
+    "projects": {
+      "title": "Projects"
+    },
+    "cases": {
+      "case1": {
+        "title": "Rebranding for the pharmacy chain",
+        "year": "2026"
+      },
+      "case2": {
+        "title": "Mobile learning app for managers",
+        "year": "2025"
+      },
+      "case3": {
+        "title": "Online store for a pharmacy chain",
+        "year": "2026"
+      },
+      "case4": {
+        "title": "Marketing materials for an online school",
+        "year": "2024"
+      }
+    },
+    "tagline": {
+      "template": "We help businesses {word} through branding and digital products",
+      "words": ["launch", "find clients", "scale"]
+    },
+    "services": {
+      "title": "Services",
+      "blocks": {
+        "branding": {
+          "title": "Branding",
+          "items": {
+            "branding": {
+              "title": "Branding",
+              "text": "We’ll analyze competitors, develop your brand name and create a versatile design system"
+            },
+            "rebranding": {
+              "title": "Rebranding",
+              "text": "We’ll rethink your brand’s look, build on its strengths and create an identity for a new audience"
+            },
+            "logo": {
+              "title": "Logo",
+              "text": "We’ll explore your brand’s character and create a recognizable mark that works across all media"
+            },
+            "brandbook": {
+              "title": "Brand Guidelines",
+              "text": "We’ll bring your visual identity elements into one system and develop clear guidelines for their use"
+            }
+          }
+        },
+        "marketing": {
+          "title": "Marketing",
+          "items": {
+            "social": {
+              "title": "Social Media",
+              "text": "We’ll develop a visual concept, create post templates and give your social media a consistent brand identity"
+            },
+            "adCreatives": {
+              "title": "Ad Creatives",
+              "text": "We’ll create banners, graphics and other visual assets, adapted to different platforms and formats"
+            },
+            "communicationStrategy": {
+              "title": "Communication Strategy",
+              "text": "We’ll research your audience, define positioning and tone of voice, and build a framework for customer communications"
+            }
+          }
+        },
+        "interfaces": {
+          "title": "Interfaces and digital products",
+          "items": {
+            "websites": {
+              "title": "Websites & Landing Pages",
+              "text": "We’ll plan the structure and user journeys, then design and build a user-friendly, functional website"
+            },
+            "mobileApps": {
+              "title": "Mobile Apps",
+              "text": "We’ll research user needs, plan interactions and create an intuitive app"
+            },
+            "platforms": {
+              "title": "Platforms",
+              "text": "We’ll untangle complex processes, map user flows and design a user-friendly interface for your digital product"
+            }
+          }
+        },
+        "support": {
+          "title": "Design Support",
+          "items": {
+            "consultation": {
+              "title": "Consultation",
+              "text": "We’ll review your goals, assess existing solutions and help you find the best way forward"
+            },
+            "support": {
+              "title": "Ongoing Support",
+              "text": "We’ll handle ongoing design tasks, maintain a consistent visual style and help your brand grow"
+            }
+          }
+        }
+      }
+    }
+  },
+  "services": {
+    "blocks": {
+      "branding": {
+        "title": "Branding",
+        "items": {
+          "fullBranding": {
+            "title": "Full Branding",
+            "text": "We’ll analyze competitors, develop your brand name and create a versatile design system"
+          },
+          "rebranding": {
+            "title": "Rebranding",
+            "text": "We’ll rethink your brand’s look, build on its strengths and create an identity for a new audience"
+          },
+          "logo": {
+            "title": "Logo",
+            "text": "We’ll explore your brand’s character and create a recognizable mark that works across all media"
+          },
+          "brandbook": {
+            "title": "Brand Guidelines",
+            "text": "We’ll bring your visual identity elements into one system and develop clear guidelines for their use"
+          }
+        }
+      },
+      "marketing": {
+        "title": "Marketing",
+        "items": {
+          "communicationStrategy": {
+            "title": "Communication Strategy",
+            "text": "We’ll research your audience, define positioning and tone of voice, and build a framework for customer communications"
+          },
+          "social": {
+            "title": "Social Media",
+            "text": "We’ll develop a visual concept, create post templates and give your social media a consistent brand identity"
+          },
+          "adCreatives": {
+            "title": "Ad Creatives",
+            "text": "We’ll create banners, graphics and other visual assets, adapted to different platforms and formats"
+          }
+        }
+      },
+      "interfaces": {
+        "title": "Interfaces and digital products",
+        "items": {
+          "platforms": {
+            "title": "Platforms",
+            "text": "We’ll untangle complex processes, map user flows and design a user-friendly interface for your digital product"
+          },
+          "websites": {
+            "title": "Websites, Landing Pages & Online Stores",
+            "text": "We’ll plan the structure and user journeys, then design and build a user-friendly, functional website"
+          },
+          "mobileApps": {
+            "title": "Mobile Apps",
+            "text": "We’ll research user needs, plan interactions and create an intuitive app"
+          }
+        }
+      },
+      "support": {
+        "title": "Design Support",
+        "items": {
+          "consultation": {
+            "title": "Consultation",
+            "text": "We’ll review your goals, assess existing solutions and help you find the best way forward"
+          },
+          "support": {
+            "title": "Ongoing Support",
+            "text": "We’ll handle ongoing design tasks, maintain a consistent visual style and help your brand grow"
+          }
+        }
+      }
+    }
+  },
+  "contacts": {
+    "title": "Contacts",
+    "socials": {
+      "title": "get to know us"
+    },
+    "mail": {
+      "title": "get in touch"
+    },
+    "form": {
+      "title": "Start a project or discuss a collaboration:"
+    }
+  },
+  "case": {
+    "h1": "Pharmacy chain rebranding",
+    "description": "Zdorovye Pro is a pharmacy chain bringing medicines, beauty and wellness products together in one place. The brand makes healthcare clear, accessible and convenient.",
+    "cities": "Moscow, Vladimir, Suzdal, Kameshkovo",
+    "task": "Goal: fully rebrand the business and take it from physical retail to e-commerce."
+  },
+  "alt": {
+    "home": {
+      "case1": "Zdorovye Pro pharmacy branding: a 3D “pro” badge on a purple-to-yellow gradient",
+      "case2": "A hand holding a smartphone with the learning app for managers",
+      "case3": "A laptop showing the pharmacy chain’s online store",
+      "case4": "Online school marketing materials on a tablet screen"
+    },
+    "case": {
+      "block04": "Zdorovye Pro logo: main and alternative versions and construction",
+      "block05": "Brand palette: lavender, yellow and gradients in a 70/30 ratio",
+      "block06": "Brand typeface Onest and the line “не просто аптека” (more than a pharmacy)",
+      "block07": "The online store catalogue on the website and a mobile app screen",
+      "block08": "The website on a laptop, the pharmacy interior, an app banner and the “pro” badge",
+      "block09": "The pharmacy entrance with branded signage and opening hours, signed “designed by MESTO”"
+    }
+  },
+  "meta": {
+    "home": {
+      "title": "MESTO — full-service design studio",
+      "description": "MESTO is an independent design studio specializing in branding, marketing, web design, UI/UX, and digital product development. We build distinctive brands and digital experiences."
+    },
+    "services": {
+      "title": "Services — MESTO",
+      "description": "Explore MESTO's design and marketing services: branding, rebranding, logo design, brand guidelines, web design, UI/UX, and digital product development."
+    },
+    "contacts": {
+      "title": "Contacts — MESTO",
+      "description": "Get in touch with MESTO design studio to discuss your next project. Let's collaborate on branding, marketing, web design, and digital product development."
+    },
+    "case": {
+      "title": "Pharmacy chain rebranding — MESTO",
+      "description": "Explore a pharmacy chain rebranding project by MESTO. A new visual identity, logo, and brand design created to give a pharmacy brand a fresh, modern look."
+    },
+    "document": {
+      "title": "{name} — MESTO"
+    },
+    "notFound": {
+      "title": "Page not found — MESTO"
+    }
+  }
+}
