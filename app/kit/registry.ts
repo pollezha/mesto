@@ -5,6 +5,9 @@ import Tag from '~/components/Tag.vue'
 import LanguagesDemo from './demos/LanguagesDemo.vue'
 import CaptionHeadingDemo from './demos/CaptionHeadingDemo.vue'
 import ButtonDemo from './demos/ButtonDemo.vue'
+import Checkbox from '~/components/Checkbox.vue'
+import InputDemo from './demos/InputDemo.vue'
+import CheckboxFieldDemo from './demos/CheckboxFieldDemo.vue'
 
 // Реестр песочницы /__kit. component-builder добавляет запись, когда верстает компонент:
 // все варианты из Figma, которые встречаются на сайте, с теми же именами свойств.
@@ -150,4 +153,142 @@ export const kit: KitEntry[] = [
       },
     ],
   },
+  {
+    // Только квадрат (Type=Checkbox); с подписью (Type=Checkbox Field) — CheckboxField.
+    // Size выбирает место использования: Default на ≥ 1024, Small на 768 и 380 («Какой вариант на какой ширине»).
+    // Filled — modelValue: true; Error — error: true (на отмеченном не показывается: варианта Filled + Error нет).
+    // В песочнице без v-model: клик переключает нативный input, вид следует за :checked.
+    name: 'Checkbox',
+    figma: '8:758',
+    component: Checkbox,
+    variants: [
+      {
+        label: 'State=Empty, Size=Default, Type=Checkbox',
+        props: { size: 'default' },
+        widths: [1920, 1440, 1280, 1024],
+      },
+      {
+        label: 'State=Filled, Size=Default, Type=Checkbox',
+        props: { size: 'default', modelValue: true },
+        widths: [1920, 1440, 1280, 1024],
+      },
+      {
+        label: 'State=Error, Size=Default, Type=Checkbox',
+        props: { size: 'default', error: true },
+        widths: [1920, 1440, 1280, 1024],
+      },
+      {
+        label: 'State=Empty, Size=Small, Type=Checkbox',
+        props: { size: 'small' },
+        widths: [768, 380],
+      },
+      {
+        label: 'State=Filled, Size=Small, Type=Checkbox',
+        props: { size: 'small', modelValue: true },
+        widths: [768, 380],
+      },
+      {
+        label: 'State=Error, Size=Small, Type=Checkbox',
+        props: { size: 'small', error: true },
+        widths: [768, 380],
+      },
+    ],
+  },
+  {
+    // Size выбирает место использования (Form): Default на ≥ 1024, Small на 768 и 380 (Р72).
+    // Ширина образца — ширина варианта в Figma (Default 710, Small 316), подпись и ошибка — из словаря.
+    // Focus и Typing — состояние фокуса: ревьюер фокусирует поле (Focus — пустое, Typing — с текстом).
+    // Значения Typing / Filled — пример ввода из вариантов Figma (2044:892 / 2044:897, 2044:917 / 2044:922).
+    // Textarea в Error на сайте не используется («Компоненты» → Input) — в реестре нет, в Input.vue работает.
+    name: 'Input',
+    figma: '2044:984',
+    component: InputDemo,
+    variants: inputVariants(),
+  },
+  {
+    // Чекбокс с подписью (Type=Checkbox Field); подпись и ссылки собирает компонент по kind из словаря (Р52).
+    // Только RU-форма: на /en/__kit демо показывает служебную пометку. Size — место использования (Form):
+    // Default на ≥ 1024, Small на 768 и 380 (Р72). Ширина образца — ширина варианта в Figma (Default 710, Small 316).
+    // Filled — modelValue: true; Error — error: true, снимается отметкой (как в форме, ТЗ → «Форма» п. 2).
+    name: 'CheckboxField',
+    figma: '8:758',
+    component: CheckboxFieldDemo,
+    variants: checkboxFieldVariants(),
+  },
 ]
+
+function checkboxFieldVariants(): KitVariant[] {
+  const sizes = [
+    { size: 'default', label: 'Default', width: '710px', widths: [1920, 1440, 1280, 1024] },
+    { size: 'small', label: 'Small', width: '316px', widths: [768, 380] },
+  ] as const
+  const kinds = [
+    { kind: 'consent', text: 'form.consent' },
+    { kind: 'newsletter', text: 'form.newsletter' },
+  ] as const
+  const states = [
+    { label: 'Empty', modelValue: false, error: false },
+    { label: 'Filled', modelValue: true, error: false },
+    { label: 'Error', modelValue: false, error: true },
+  ] as const
+
+  return kinds.flatMap((k) =>
+    sizes.flatMap((s) =>
+      states.map((st) => ({
+        label: `State=${st.label}, Size=${s.label}, Type=Checkbox Field · ${k.text}`,
+        props: {
+          kind: k.kind,
+          size: s.size,
+          modelValue: st.modelValue,
+          error: st.error,
+          style: { width: s.width },
+        },
+        widths: [...s.widths],
+      })),
+    ),
+  )
+}
+
+function inputVariants(): KitVariant[] {
+  const sizes = [
+    { size: 'default', label: 'Default', width: '710px', widths: [1920, 1440, 1280, 1024] },
+    { size: 'small', label: 'Small', width: '316px', widths: [768, 380] },
+  ] as const
+  const types = [
+    { type: 'field', label: 'Field', text: 'form.name', value: 'Мария' },
+    {
+      type: 'textarea',
+      label: 'Textarea',
+      text: 'form.message',
+      value: 'Нужен ребрендинг сети кофеен',
+    },
+  ] as const
+  const states = [
+    { label: 'Default', filled: false, error: false, disabled: false },
+    { label: 'Focus', filled: false, error: false, disabled: false },
+    { label: 'Typing', filled: true, error: false, disabled: false },
+    { label: 'Filled', filled: true, error: false, disabled: false },
+    { label: 'Error', filled: false, error: true, disabled: false },
+    { label: 'Disabled', filled: false, error: false, disabled: true },
+  ] as const
+
+  return sizes.flatMap((s) =>
+    types.flatMap((t) =>
+      states
+        .filter((st) => !(t.type === 'textarea' && st.label === 'Error'))
+        .map((st) => ({
+          label: `Type=${t.label}, State=${st.label}, Size=${s.label}`,
+          props: {
+            type: t.type,
+            size: s.size,
+            text: t.text,
+            value: st.filled ? t.value : '',
+            error: st.error,
+            disabled: st.disabled,
+            style: { width: s.width },
+          },
+          widths: [...s.widths],
+        })),
+    ),
+  )
+}
