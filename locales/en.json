@@ -4,6 +4,9 @@
     "services": "Services",
     "contacts": "Contacts"
   },
+  "logo": {
+    "label": "MESTO"
+  },
   "cta": {
     "discuss": "Discuss a project",
     "lead": {
@@ -13,6 +16,10 @@
     "or": "Or email us:"
   },
   "lang": "RU / EN",
+  "languages": {
+    "ru": "RU",
+    "en": "EN"
+  },
   "tag": {
     "soon": "soon"
   },
