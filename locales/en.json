@@ -2,7 +2,8 @@
   "nav": {
     "projects": "Projects",
     "services": "Services",
-    "contacts": "Contacts"
+    "contacts": "Contacts",
+    "menu": "Menu"
   },
   "logo": {
     "label": "MESTO"

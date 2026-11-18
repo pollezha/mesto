@@ -8,6 +8,9 @@ import ButtonDemo from './demos/ButtonDemo.vue'
 import Checkbox from '~/components/Checkbox.vue'
 import InputDemo from './demos/InputDemo.vue'
 import CheckboxFieldDemo from './demos/CheckboxFieldDemo.vue'
+import PageHeaderDemo from './demos/PageHeaderDemo.vue'
+import Footer from '~/components/Footer.vue'
+import NavBar from '~/components/NavBar.vue'
 
 // Реестр песочницы /__kit. component-builder добавляет запись, когда верстает компонент:
 // все варианты из Figma, которые встречаются на сайте, с теми же именами свойств.
@@ -84,7 +87,7 @@ export const kit: KitEntry[] = [
   },
   {
     // Свойство Figma Language = текущая локаль: /__kit — Russian, /en/__kit — English.
-    // Light — полоса Menu (≥ 1024) и строка в футере (< 1024, Р23); Dark — только полоса Menu кейса (Figma 52:17768).
+    // Light — полоса Menu (≥ 1024) и строка в футере (< 1024, Р23); Dark — полоса Menu кейса (Figma 52:17768) и Page header.
     // Dark в песочнице — на тёмной подложке демо, иначе белый текст не виден.
     name: 'Languages',
     figma: '4:323',
@@ -214,6 +217,65 @@ export const kit: KitEntry[] = [
     figma: '8:758',
     component: CheckboxFieldDemo,
     variants: checkboxFieldVariants(),
+  },
+  {
+    // Variant Width выбирает ширина экрана (нижняя контрольная, Р4); Locale — язык страницы
+    // (/__kit — RU, /en/__kit — EN). Короткий заголовок — «Услуги» (nav.services), длинный — название
+    // документа (footer.consent на RU, footer.privacy на EN). Логотип и Languages — только ≥ 1024.
+    name: 'PageHeader',
+    figma: '2046:979',
+    component: PageHeaderDemo,
+    variants: [
+      { label: 'Width=1920 … 380 · title nav.services', props: { text: 'short' } },
+      { label: 'Width=1920 … 380 · long title (document name)', props: { text: 'long' } },
+    ],
+  },
+  {
+    // Local — язык страницы (/__kit — RU, /en/__kit — EN). Desktop на 1920–768 (на 768 с Languages,
+    // она видна только < 1024), Mobile на 380. «Настройки cookie» — пункт при условии Р22:
+    // в песочнице включается prop'ом cookieSettings.
+    name: 'Footer',
+    figma: '38:13044',
+    component: Footer,
+    variants: [
+      {
+        label: 'Local=RU / EN, Device=Desktop',
+        props: { cookieSettings: false },
+        widths: [1920, 1440, 1280, 1024, 768],
+      },
+      { label: 'Local=RU / EN, Device=Mobile', props: { cookieSettings: false }, widths: [380] },
+      {
+        label: 'Local=RU / EN, Device=Desktop · Настройки cookie (Р22)',
+        props: { cookieSettings: true },
+        widths: [1920, 1440, 1280, 1024, 768],
+      },
+      {
+        label: 'Local=RU / EN, Device=Mobile · Настройки cookie (Р22)',
+        props: { cookieSettings: true },
+        widths: [380],
+      },
+    ],
+  },
+  {
+    // NavBar fixed → в песочнице staticPosition (в потоке). Какой вариант на какой ширине:
+    // Desktop на ≥ 1024, Mobile на 768 и 380; Mobile-op — открытое меню на < 1024 (Р53, В28).
+    // Вид выбирает медиазапрос на 1024, поэтому ширина страницы = ширина экрана.
+    name: 'NavBar',
+    figma: '35:5013',
+    component: NavBar,
+    variants: [
+      {
+        label: 'Type=Desktop',
+        props: { staticPosition: true },
+        widths: [1920, 1440, 1280, 1024],
+      },
+      { label: 'Type=Mobile', props: { staticPosition: true }, widths: [768, 380] },
+      {
+        label: 'Type=Mobile-op',
+        props: { staticPosition: true, initialOpen: true },
+        widths: [768, 380],
+      },
+    ],
   },
 ]
 

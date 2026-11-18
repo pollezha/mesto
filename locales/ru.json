@@ -2,7 +2,8 @@
   "nav": {
     "projects": "Проекты",
     "services": "Услуги",
-    "contacts": "Контакты"
+    "contacts": "Контакты",
+    "menu": "Меню"
   },
   "logo": {
     "label": "МЕСТО"
