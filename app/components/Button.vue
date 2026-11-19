@@ -2,7 +2,7 @@
 // Button — Figma 1:1748 (Type: Primary / Secondary / With Icon · State: Default / Hover / Pressed ·
 // Device: Desktop / Mobile); docs «Компоненты» → «Кнопки и иконки».
 // Вариант Device выбирает место использования («Какой вариант на какой ширине»): Desktop на ≥ 1024,
-// Mobile на 768 и 380. Сама кнопка по ширине не переключается.
+// Mobile на 768 и 380. device="auto" — то же медиазапросом (Mobile, на ≥ 1024 Desktop), без JS.
 // Где стоит: форма (Primary во всю ширину), раскрытый блок услуг (Secondary, только ≥ 1280),
 // 404 (Primary-ссылка на главную), cookie-баннер (размеры переопределяет CookieBanner, Р73 —
 // через CSS-переменные --button-*, см. стили). With Icon на экранах сайта не стоит
@@ -15,8 +15,8 @@ const props = withDefaults(
   defineProps<{
     /** Type в Figma. */
     type?: 'primary' | 'secondary' | 'with-icon'
-    /** Device в Figma. */
-    device?: 'desktop' | 'mobile'
+    /** Device в Figma; auto — Mobile ниже 1024 и Desktop на ≥ 1024 (медиазапросом, без JS). */
+    device?: 'desktop' | 'mobile' | 'auto'
     /** Идёт отправка (ТЗ → «Форма» п. 3): aria-busy, клики игнорируются, вид не меняется. Только для <button>. */
     busy?: boolean
     /** Атрибут type у <button> (в форме — submit). */
@@ -164,7 +164,9 @@ function onClick(event: MouseEvent) {
  * I2074:5769;2045:942 @380, 404 2151:3644 @380.
  */
 .button--primary.button--mobile,
-.button--secondary.button--mobile {
+.button--secondary.button--mobile,
+.button--primary.button--auto,
+.button--secondary.button--auto {
   --_button-pad-y: 12px; /* Figma I2074:5853;2045:942 @768, I2074:5769;2045:942 @380 */
   --_button-pad-x: 24px; /* Figma I2074:5853;2045:942 @768, I2074:5769;2045:942 @380 */
   --_button-radius: var(--radius-12); /* Radius/12 — 12 на всех ширинах */
@@ -184,7 +186,8 @@ function onClick(event: MouseEvent) {
   --_button-lh: var(--lh-caption-2);
 }
 
-.button--with-icon.button--mobile {
+.button--with-icon.button--mobile,
+.button--with-icon.button--auto {
   --_button-pad-y: 12px; /* Figma 2091:3514 */
   --_button-pad-x: 20px; /* Figma 2091:3514 */
   --_button-gap: 8px; /* Figma 2091:3514 */
@@ -193,6 +196,29 @@ function onClick(event: MouseEvent) {
   --_button-icon-size: 13.714px; /* Figma 2091:3516 */
   --_button-fs: 12px; /* Figma 2091:3514: font-size/caption 2 (Mobile) */
   --_button-lh: 16px; /* Figma 2091:3514: line-height/caption 2 (Mobile) */
+}
+
+/* device=auto на ≥ 1024 — значения Desktop (источники — выше, у .button--desktop) */
+@media (min-width: 1024px) {
+  .button--primary.button--auto,
+  .button--secondary.button--auto {
+    --_button-pad-y: var(--space-24);
+    --_button-pad-x: var(--space-36);
+    --_button-radius: var(--radius-24);
+    --_button-fs: var(--fs-caption-1);
+    --_button-lh: var(--lh-caption-1);
+  }
+
+  .button--with-icon.button--auto {
+    --_button-min-height: 64px;
+    --_button-pad-y: 0px;
+    --_button-pad-x: 24px;
+    --_button-gap: 8px;
+    --_button-radius: 20px;
+    --_button-icon-size: 32px;
+    --_button-fs: var(--fs-caption-2);
+    --_button-lh: var(--lh-caption-2);
+  }
 }
 
 /* Иконка в With Icon — не «размер = кегль», а фиксированный размер варианта */

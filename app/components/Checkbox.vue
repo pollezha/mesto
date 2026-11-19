@@ -3,7 +3,7 @@
 // Size: Default / Small); docs «Компоненты» → «Форма и CTA» → Checkbox. Подпись (Type=Checkbox Field) —
 // отдельный компонент CheckboxField, он связывает подпись с этим чекбоксом через id / for.
 // Вариант Size выбирает место использования («Какой вариант на какой ширине»): Default на ≥ 1024,
-// Small на 768 и 380. Сам чекбокс по ширине не переключается.
+// Small на 768 и 380. size="auto" — то же медиазапросом (Small, на ≥ 1024 Default), без JS.
 // State не prop: Empty / Filled — состояние нативного input (v-model), Error — prop error.
 // Варианта «Filled + Error» в Figma нет (8:758): отмеченный чекбокс всегда Filled, ошибку снимает
 // форма при отметке (ТЗ → «Форма» п. 2). Hover и Pressed в Figma нет. Фокус — обводка Р46 (2 px Blue 500,
@@ -16,8 +16,8 @@ defineOptions({ inheritAttrs: false })
 
 withDefaults(
   defineProps<{
-    /** Size в Figma. */
-    size?: 'default' | 'small'
+    /** Size в Figma; auto — Small ниже 1024 и Default на ≥ 1024 (медиазапросом, без JS). */
+    size?: 'default' | 'small' | 'auto'
     /** State=Error: рамка System/Error и aria-invalid (пока не отмечен). */
     error?: boolean
     /** Не нажимается (во время отправки формы); вид не меняется. */
@@ -100,7 +100,8 @@ function inputAttrs() {
   --_checkbox-border: 2px; /* Figma 8:756, 2091:3622; I2074:5748;2045:900;2044:986 @1920 … @1024 */
 }
 
-.checkbox--small {
+.checkbox--small,
+.checkbox--auto {
   --_checkbox-size: 24px; /* Figma 2043:1679 / 2043:1676 / 2091:3624; I2074:5853;2045:936;2044:997 @768, I2074:5769;2045:936;2044:997 @380 */
   --_checkbox-radius: 5.955px; /* Figma I2074:5853;2045:936;2044:997 @768, I2074:5769;2045:936;2044:997 @380 */
   --_checkbox-border: 1.2px; /* Figma 2043:1679, 2091:3624; I2074:5853;2045:936;2044:997 @768, @380 */
@@ -173,9 +174,24 @@ function inputAttrs() {
   mask-image: url('~/assets/images/checkbox-check-default.svg');
 }
 
-.checkbox--small .checkbox__check {
+.checkbox--small .checkbox__check,
+.checkbox--auto .checkbox__check {
   -webkit-mask-image: url('~/assets/images/checkbox-check-small.svg');
   mask-image: url('~/assets/images/checkbox-check-small.svg');
+}
+
+/* size=auto на ≥ 1024 — значения Default (источники — у .checkbox--default) */
+@media (min-width: 1024px) {
+  .checkbox--auto {
+    --_checkbox-size: 40px;
+    --_checkbox-radius: 9.926px;
+    --_checkbox-border: 2px;
+  }
+
+  .checkbox--auto .checkbox__check {
+    -webkit-mask-image: url('~/assets/images/checkbox-check-default.svg');
+    mask-image: url('~/assets/images/checkbox-check-default.svg');
+  }
 }
 
 .checkbox__input:checked ~ .checkbox__check {

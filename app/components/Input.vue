@@ -3,7 +3,8 @@
 // State: Default / Focus / Typing / Filled / Error / Disabled · Size: Default / Small);
 // docs «Компоненты» → «Форма и CTA» → Input; Р51, Р64, Р71, Р72; ТЗ → «Форма».
 // Вариант Size выбирает место использования (Form): Default на ≥ 1024, Small на 768 и 380
-// («Какой вариант на какой ширине», Р72). Сам Input по ширине не переключается.
+// («Какой вариант на какой ширине», Р72). size="auto" — то же самое медиазапросом (Small по умолчанию,
+// Default в @media (min-width: 1024px)), без JS и без смены DOM; явные default / small — для песочницы.
 // State не prop, а состояние нативного элемента (Р51): Default — пустое без фокуса; Focus — пустое в фокусе
 // (:focus + :placeholder-shown); Typing — в фокусе с текстом; Filled — с текстом без фокуса;
 // Error — prop error (держится и в фокусе); Disabled — prop disabled (во время отправки, ТЗ → «Форма» п. 3).
@@ -19,8 +20,8 @@ const props = withDefaults(
   defineProps<{
     /** Type в Figma: однострочное поле или многострочное. */
     type?: 'field' | 'textarea'
-    /** Size в Figma. */
-    size?: 'default' | 'small'
+    /** Size в Figma; auto — Small ниже 1024 и Default на ≥ 1024 (медиазапросом, без JS; Form на сайте). */
+    size?: 'default' | 'small' | 'auto'
     /** Подпись поля (плейсхолдер из словаря, передаёт Form) — и доступное имя. */
     placeholder: string
     /** State=Error. */
@@ -316,7 +317,8 @@ function onInput(event: Event) {
 }
 
 /* ---------- Size=Small (768 и 380): одинаково на обеих ширинах, тексты в режиме Mobile (Р72) ---------- */
-.input--small {
+.input--small,
+.input--auto {
   --_input-border-rest: 1px; /* Figma 2044:934 @380; I2074:5853;2045:924 @768, I2074:5769;2045:924 @380 */
   --_input-border-active: 2px; /* Figma 2044:942, 2044:951 @380 (Typing, Error) */
   --_input-pad-x: 12px; /* Figma 2044:934 @380; I2074:5853;2045:932 @768, I2074:5769;2045:932 @380 */
@@ -332,14 +334,65 @@ function onInput(event: Event) {
   --_input-textarea-min-height: 120px; /* Figma I2074:5769;2045:932 @380 (RU) */
 }
 
-.input--small.input--en {
+:where(.input--small, .input--auto).input--en {
   --_input-textarea-min-height: 100px; /* Figma I2074:5889;2045:953 @380 (EN) */
 }
 
 @media (min-width: 768px) {
   .input--small,
-  .input--small.input--en {
+  .input--auto,
+  :where(.input--small, .input--auto).input--en {
     --_input-textarea-min-height: 100px; /* Р72; Figma I2074:5853;2045:932 (RU), I2074:5949;2045:953 (EN) @768 */
+  }
+}
+
+/* ---------- Size=auto: Default на ≥ 1024 — те же значения, что у .input--default (источники — там) ---------- */
+@media (min-width: 1024px) {
+  .input--auto {
+    --_input-border-rest: 2px;
+    --_input-border-active: 3px;
+    --_input-pad-x: var(--space-36);
+    --_input-radius: var(--radius-20);
+    --_input-fs: var(--fs-txt-3);
+    --_input-lh: var(--lh-txt-3);
+    --_input-hint-fs: var(--fs-caption-2);
+    --_input-hint-lh: var(--lh-caption-2);
+    --_input-hint-gap: 12px; /* TODO(question): new Н11 — как у Default */
+    --_input-field-height: 68px;
+    --_input-textarea-pad-top: 20px;
+    --_input-textarea-pad-bottom: 51px;
+    --_input-textarea-min-height: 99px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .input--auto {
+    --_input-field-height: 78px;
+    --_input-textarea-pad-top: 23px;
+    --_input-textarea-pad-bottom: 59px;
+    --_input-textarea-min-height: 114px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .input--auto {
+    --_input-field-height: 82px;
+    --_input-textarea-pad-top: 24px;
+    --_input-textarea-pad-bottom: 62px;
+    --_input-textarea-min-height: 120px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .input--auto {
+    --_input-field-height: 96px;
+    --_input-textarea-pad-top: 30px;
+    --_input-textarea-pad-bottom: 74px;
+    --_input-textarea-min-height: 180px;
+  }
+
+  .input--auto.input--en {
+    --_input-textarea-min-height: 144px;
   }
 }
 </style>

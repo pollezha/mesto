@@ -7,15 +7,15 @@
 // Вся подпись — <label for>: клик по ней переключает чекбокс; клик по ссылке внутри label чекбокс не
 // переключает (активация label не срабатывает на интерактивных потомках) и открывает документ в новой
 // вкладке (Р52; ТЗ → «Интерактив», «Форма» п. 1).
-// Size выбирает место использования: Default на ≥ 1024, Small на 768 и 380 (Р72).
+// Size выбирает место использования: Default на ≥ 1024, Small на 768 и 380 (Р72); auto — то же медиазапросом.
 // State: Empty / Filled — v-model, Error — prop error (снимает форма при отметке, ТЗ → «Форма» п. 2).
 
 withDefaults(
   defineProps<{
     /** Какое согласие: consent — обработка персональных данных (обязательное), newsletter — рассылка. */
     kind: 'consent' | 'newsletter'
-    /** Size в Figma. */
-    size?: 'default' | 'small'
+    /** Size в Figma; auto — Small ниже 1024 и Default на ≥ 1024 (медиазапросом, без JS). */
+    size?: 'default' | 'small' | 'auto'
     /** State=Error: рамка квадрата System/Error, подпись Black (пока не отмечен). */
     error?: boolean
     /** Не нажимается (во время отправки формы); вид не меняется (ТЗ → «Форма» п. 3). */
@@ -131,7 +131,8 @@ const docs = {
   --_checkbox-field-lh: var(--lh-caption-2);
 }
 
-.checkbox-field--small {
+.checkbox-field--small,
+.checkbox-field--auto {
   --_checkbox-field-gap: 12px; /* Figma 2044:996 / 2044:999 / 2044:1004; I2074:5853;2045:936 @768, I2074:5769;2045:936 @380 */
   /*
    * Р72: в форме Small тексты в режиме Mobile — Caption 2 Mobile 12/16 и на 768 (токен 768 — 16/20).
@@ -139,6 +140,15 @@ const docs = {
    */
   --_checkbox-field-fs: 12px; /* Figma I2074:5853;2045:936 @768, I2074:5769;2045:936 @380: font-size/caption 2 (Mobile) */
   --_checkbox-field-lh: 16px; /* Figma I2074:5853;2045:936 @768, I2074:5769;2045:936 @380: line-height/caption 2 (Mobile) */
+}
+
+/* size=auto на ≥ 1024 — значения Default (источники и комментарии — у .checkbox-field--default) */
+@media (min-width: 1024px) {
+  .checkbox-field--auto {
+    --_checkbox-field-gap: 30px;
+    --_checkbox-field-fs: var(--fs-caption-2);
+    --_checkbox-field-lh: var(--lh-caption-2);
+  }
 }
 
 /* Caption 2, Achromatic/Gray 700 (Empty и Filled) */
