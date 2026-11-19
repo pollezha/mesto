@@ -40,19 +40,24 @@ const entries = computed(() => {
 </template>
 
 <style scoped>
+/* Колонки не растут по содержимому: широкий образец (например, Default 806 на 380)
+   не должен растягивать страницу и соседние варианты своей ширины. */
 .kit {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 48px;
   padding: 24px 0;
 }
 
 .kit__section {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
 }
 
 .kit__item {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
 }
 
@@ -65,5 +70,7 @@ const entries = computed(() => {
 
 .kit__stage {
   display: flow-root;
+  /* образец шире окна прокручивается внутри своей рамки, а не всей страницей */
+  overflow-x: auto;
 }
 </style>

@@ -11,6 +11,8 @@ import CheckboxFieldDemo from './demos/CheckboxFieldDemo.vue'
 import PageHeaderDemo from './demos/PageHeaderDemo.vue'
 import Footer from '~/components/Footer.vue'
 import NavBar from '~/components/NavBar.vue'
+import FormDemo from './demos/FormDemo.vue'
+import ContactsCta from '~/components/ContactsCta.vue'
 
 // Реестр песочницы /__kit. component-builder добавляет запись, когда верстает компонент:
 // все варианты из Figma, которые встречаются на сайте, с теми же именами свойств.
@@ -273,6 +275,94 @@ export const kit: KitEntry[] = [
       {
         label: 'Type=Mobile-op',
         props: { staticPosition: true, initialOpen: true },
+        widths: [768, 380],
+      },
+    ],
+  },
+  {
+    // Locale — язык страницы: RU на /__kit (поля, два чекбокса), EN на /en/__kit (три поля, многострочное ниже).
+    // Size выбирает место использования: Default на ≥ 1024, Small на 768 и 380 (Р72). Ширина образца — ширина
+    // компонента в Figma (Default 806, Small 348). Состояния «пустая отправка», «отправка», «успех» и
+    // «ошибка отправки» демо вызывает само (заполняет поля, жмёт кнопку, ответ /api/lead подменён) — demos/FormDemo.vue.
+    name: 'Form',
+    figma: '2045:959',
+    component: FormDemo,
+    variants: [
+      {
+        label: 'Locale=RU|EN, Size=Default',
+        props: { size: 'default' },
+        widths: [1920, 1440, 1280, 1024],
+      },
+      {
+        label: 'Locale=RU|EN, Size=Small',
+        props: { size: 'small' },
+        widths: [768, 380],
+      },
+      {
+        label: 'Locale=RU|EN, Size=Default · пустая отправка (Error полей и согласия)',
+        props: { size: 'default', state: 'errors' },
+        widths: [1920, 1440, 1280, 1024],
+      },
+      {
+        label: 'Locale=RU|EN, Size=Small · пустая отправка (Error полей и согласия)',
+        props: { size: 'small', state: 'errors' },
+        widths: [768, 380],
+      },
+      {
+        label: 'Locale=RU|EN, Size=Default · отправка (поля Disabled, кнопка aria-busy)',
+        props: { size: 'default', state: 'sending' },
+        widths: [1920, 1440, 1280, 1024],
+      },
+      {
+        label: 'Locale=RU|EN, Size=Small · отправка (поля Disabled, кнопка aria-busy)',
+        props: { size: 'small', state: 'sending' },
+        widths: [768, 380],
+      },
+      {
+        label: 'Locale=RU|EN, Size=Default · успех (Р67)',
+        props: { size: 'default', state: 'success' },
+        widths: [1920, 1440, 1280, 1024],
+      },
+      {
+        label: 'Locale=RU|EN, Size=Small · успех (Р67)',
+        props: { size: 'small', state: 'success' },
+        widths: [768, 380],
+      },
+      {
+        label: 'Locale=RU|EN, Size=Default · успех, фокус по клику (ТЗ → «Форма» п. 4)',
+        props: { size: 'default', state: 'success-click' },
+        widths: [1920, 1440, 1280, 1024],
+      },
+      {
+        label: 'Locale=RU|EN, Size=Small · успех, фокус по клику (ТЗ → «Форма» п. 4)',
+        props: { size: 'small', state: 'success-click' },
+        widths: [768, 380],
+      },
+      {
+        label: 'Locale=RU|EN, Size=Default · ошибка отправки (В26)',
+        props: { size: 'default', state: 'error' },
+        widths: [1920, 1440, 1280, 1024],
+      },
+      {
+        label: 'Locale=RU|EN, Size=Small · ошибка отправки (В26)',
+        props: { size: 'small', state: 'error' },
+        widths: [768, 380],
+      },
+    ],
+  },
+  {
+    // Device выбирает ширина экрана: Desktop на ≥ 1024 (Form Default), Mobile на 768 и 380 (Form Small);
+    // Local — язык страницы (/__kit — Default (RU), /en/__kit — En). Перекрытия с футером в песочнице нет (prop overlap).
+    name: 'ContactsCta',
+    figma: '23:3888',
+    component: ContactsCta,
+    variants: [
+      {
+        label: 'Device=Desktop, Local=Default (RU) / En',
+        widths: [1920, 1440, 1280, 1024],
+      },
+      {
+        label: 'Device=Mobile, Local=Default (RU) / En',
         widths: [768, 380],
       },
     ],
