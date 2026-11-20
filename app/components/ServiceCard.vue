@@ -6,7 +6,7 @@
 // ТЗ → «Услуги» п. 2: карточка не кликабельна, hover нет (Р14). Названия карточек — h3 (Р56): prop level.
 // size="auto" — Small ниже 768 и Default на ≥ 768 медиазапросом, без JS и смены DOM (как Input/Form);
 // явные default / small — для песочницы. Тексты (title, text) передаёт страница из словаря services.blocks.*.
-// TODO(question): new Н28 — высота карточки по содержимому (height: 100% / ряд), во фреймах ≥ 1024 высоты заданы вручную.
+// решение владельца 20.11.2026 (Н28): высота по содержимому, ряд выравнивается по самой высокой карточке.
 // Карточка тянется на высоту ячейки (height: 100%): раскладку раздела (колонки, высокая карточка, ряды одной высоты)
 // делает страница. Содержимое разнесено по высоте (space-between), заголовок и описание прижаты к краям.
 const props = withDefaults(
@@ -23,15 +23,11 @@ const props = withDefaults(
   { size: 'auto', level: 3 },
 )
 
-const { locale } = useI18n()
 const titleTag = computed(() => `h${props.level}`)
 </script>
 
 <template>
-  <div
-    class="service-card"
-    :class="[`service-card--${size}`, { 'service-card--en': locale === 'en' }]"
-  >
+  <div class="service-card" :class="`service-card--${size}`">
     <component :is="titleTag" class="service-card__title">{{ title }}</component>
     <p class="service-card__text">{{ text }}</p>
   </div>
@@ -44,7 +40,7 @@ const titleTag = computed(() => `h${props.level}`)
   --sc-pad: 20px; /* Figma 2076:6116 @380 */
   --sc-radius: 24px; /* Figma 2076:6116 @380 */
   --sc-title-h: 24px; /* Figma 2076:6116 @380: title 316 × 24 */
-  --sc-gap: 0px; /* RU: заголовок и описание разнесены space-between; EN < 1024 — см. ниже */
+  --sc-gap: 0px; /* заголовок и описание разнесены space-between, зазора нет (Н27, RU и EN) */
 
   display: flex;
   flex-direction: column;
@@ -83,10 +79,7 @@ const titleTag = computed(() => `h${props.level}`)
   line-height: var(--lh-txt-3);
 }
 
-/* TODO(question): new Н27 — на EN-экранах 768 и 380 между названием и описанием 10 (--space-10), на RU-экранах 0 */
-.service-card--en {
-  --sc-gap: var(--space-10); /* Figma EN 2110:7578 @768, 2110:7636 @380 */
-}
+/* решение владельца 20.11.2026 (Н27): EN как RU — без зазора между названием и описанием на 768 и 380 */
 
 /* size="default" ниже 768 на сайте не используется (только песочница): токены дают значения 380, как и auto ниже 768;
    на ≥ 768 значения ступени 768 задаёт медиазапрос ниже (--space-36 = 22, --radius-24 = 14, Figma 2076:6137 @768) */

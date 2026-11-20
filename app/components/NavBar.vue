@@ -334,7 +334,7 @@ onBeforeUnmount(() => {
 }
 
 /* ---------- Панель Mobile-op (< 1024): открытие и закрытие — только opacity, 300 мс ease-out ----------
- * TODO(question): new Н16 — вид анимации бургера/панели в документации не задан */
+ * решение владельца 20.11.2026 (Н16): панель плавно проявляется, opacity 300 мс */
 .navbar__panel {
   position: absolute;
   top: calc(100% + var(--_nav-panel-gap));

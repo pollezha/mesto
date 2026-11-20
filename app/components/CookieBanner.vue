@@ -18,31 +18,45 @@ const { bannerOpen, accept, decline } = useConsent()
 
 const visible = computed(() => props.staticPosition || bannerOpen.value)
 
-// TODO(question): new Н30 — доступное имя области баннера и объявление его появления (в «Контенте» текста нет)
-// TODO(question): new Н31 — слой баннера относительно навбара и открытого мобильного меню
-// TODO(question): new Н32 — вид появления / исчезновения баннера (анимация не задана)
-// TODO(question): new Н33 — размеры Desktop на 1024–1919: в Figma только вариант 1920 (1200)
+const { t } = useI18n()
+// решение владельца 20.11.2026 (Н30): доступное имя области — существующий текст footer.cookies, новый ключ не заводим.
+// решение владельца 20.11.2026 (Н31): баннер под навбаром и открытым меню (z-index 90).
+// решение владельца 20.11.2026 (Н32): плавное появление и исчезновение, opacity 300 мс ease-out
+// (prefers-reduced-motion гасит transition глобально в base.css).
+// решение владельца 20.11.2026 (Н33): на 1024–1919 размеры по токенам своей ширины.
 </script>
 
 <template>
-  <div v-if="visible" class="cookie-banner" :class="{ 'cookie-banner--static': staticPosition }">
-    <i18n-t keypath="cookie.text" tag="p" scope="global" class="cookie-banner__text">
-      <template #privacy>
-        <!-- Р40, ТЗ → «Интерактив»: ссылка на политику — в новой вкладке (чтобы не потерять баннер) -->
-        <NuxtLinkLocale to="/privacy" class="cookie-banner__link" target="_blank" rel="noopener">{{
-          $t('cookie.textLinks.privacy')
-        }}</NuxtLinkLocale>
-      </template>
-    </i18n-t>
-    <div class="cookie-banner__actions">
-      <Button type="primary" device="auto" class="cookie-banner__button" @click="accept()">
-        {{ $t('cookie.accept') }}
-      </Button>
-      <Button type="secondary" device="auto" class="cookie-banner__button" @click="decline()">
-        {{ $t('cookie.decline') }}
-      </Button>
+  <Transition name="cookie-banner-fade">
+    <div
+      v-if="visible"
+      class="cookie-banner"
+      :class="{ 'cookie-banner--static': staticPosition }"
+      role="region"
+      :aria-label="t('footer.cookies')"
+    >
+      <i18n-t keypath="cookie.text" tag="p" scope="global" class="cookie-banner__text">
+        <template #privacy>
+          <!-- Р40, ТЗ → «Интерактив»: ссылка на политику — в новой вкладке (чтобы не потерять баннер) -->
+          <NuxtLinkLocale
+            to="/privacy"
+            class="cookie-banner__link"
+            target="_blank"
+            rel="noopener"
+            >{{ $t('cookie.textLinks.privacy') }}</NuxtLinkLocale
+          >
+        </template>
+      </i18n-t>
+      <div class="cookie-banner__actions">
+        <Button type="primary" device="auto" class="cookie-banner__button" @click="accept()">
+          {{ $t('cookie.accept') }}
+        </Button>
+        <Button type="secondary" device="auto" class="cookie-banner__button" @click="decline()">
+          {{ $t('cookie.decline') }}
+        </Button>
+      </div>
     </div>
-  </div>
+  </Transition>
 </template>
 
 <style scoped>
@@ -94,6 +108,17 @@ const visible = computed(() => props.staticPosition || bannerOpen.value)
   --button-radius: var(--radius-12); /* Radius/12 — 12 */
   --button-fs: var(--_cb-fs);
   --button-lh: var(--_cb-lh);
+}
+
+/* Н32: появление и исчезновение — opacity 300 мс ease-out; fixed на раскладку не влияет */
+.cookie-banner-fade-enter-active,
+.cookie-banner-fade-leave-active {
+  transition: opacity 300ms ease-out;
+}
+
+.cookie-banner-fade-enter-from,
+.cookie-banner-fade-leave-to {
+  opacity: 0;
 }
 
 /* Песочница: в потоке, без fixed */
