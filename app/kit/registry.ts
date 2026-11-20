@@ -13,6 +13,12 @@ import Footer from '~/components/Footer.vue'
 import NavBar from '~/components/NavBar.vue'
 import FormDemo from './demos/FormDemo.vue'
 import ContactsCta from '~/components/ContactsCta.vue'
+import Typing from '~/components/Typing.vue'
+import HeroGif from '~/components/HeroGif.vue'
+import CaptionItemDemo from './demos/CaptionItemDemo.vue'
+import ServicesBlock from '~/components/ServicesBlock.vue'
+import CaseImageDemo from './demos/CaseImageDemo.vue'
+import CaseCardDemo from './demos/CaseCardDemo.vue'
 
 // Реестр песочницы /__kit. component-builder добавляет запись, когда верстает компонент:
 // все варианты из Figma, которые встречаются на сайте, с теми же именами свойств.
@@ -367,7 +373,128 @@ export const kit: KitEntry[] = [
       },
     ],
   },
+  {
+    // services-block: 4 блока × Default / Opened × Desktop / Mobile; Opened — initialOpen (только песочница).
+    name: 'ServicesBlock',
+    figma: '8:410',
+    component: ServicesBlock,
+    variants: servicesBlockVariants(),
+  },
+  {
+    // Вариантов в Figma нет. Демо — белая панель раскрытого блока с двумя пунктами блока из словаря
+    // текущей локали (Р8). ≥ 1024 линия 4 / отступ 20 / gap 8, на 768 и 380 — 2 / 8 / 4.
+    // Самые длинные EN: communicationStrategy, websites; RU: communicationStrategy.
+    name: 'CaptionItem',
+    figma: '8:523',
+    component: CaptionItemDemo,
+    variants: [
+      {
+        label: 'captionItem · Branding',
+        props: { block: 'branding', items: ['branding', 'brandbook'] },
+      },
+      {
+        label: 'captionItem · Marketing',
+        props: { block: 'marketing', items: ['social', 'communicationStrategy'] },
+      },
+      {
+        label: 'captionItem · UX/UI',
+        props: { block: 'interfaces', items: ['websites', 'mobileApps'] },
+      },
+      {
+        label: 'captionItem · Design Support',
+        props: { block: 'support', items: ['consultation', 'support'] },
+      },
+    ],
+  },
+  {
+    // Отдельного компонента в Figma нет: блок Section на экранах главной (35:2204 @1920 … 35:2498 @380; EN 51:13692 … 51:13738).
+    // Вариантов нет, вид одинаков на всех 6 ширинах; язык — по странице (/__kit — RU, /en/__kit — EN).
+    // Анимация стартует, когда блок в окне; reduced motion — статичное последнее слово (эмулируется в браузере).
+    name: 'Typing',
+    figma: '35:2204',
+    component: Typing,
+    variants: [{ label: 'Section · перебивка (RU / EN по локали страницы)' }],
+  },
+  {
+    // Hero-надпись главной (Header 35:2170 @1920 … 35:2469 @380; EN 51:13656 … 51:13707) + эффект курсора.
+    // Вариантов нет; на < 1024 — только надпись. Эффект (круг 240 + гиф) — наведением мыши на ≥ 1024.
+    name: 'HeroGif',
+    figma: '2092:3801',
+    component: HeroGif,
+    variants: [{ label: 'Hero-надпись + gif (RU / EN по локали страницы)' }],
+  },
+  {
+    // state=Default / Hover: Hover — наведением на фото (+6%, 300 мс ease-out, pointer: fine, Р1).
+    // Кейсы 1–4 главной (по месту в Case card); рамка по фрейму каждой ширины (радиус/пропорции в CaseImage.vue).
+    name: 'CaseImage',
+    figma: '14:1481',
+    component: CaseImageDemo,
+    variants: [
+      { label: 'Кейс 1 (Featured)', props: { n: 1 } },
+      { label: 'Кейс 2', props: { n: 2 } },
+      { label: 'Кейс 3', props: { n: 3 } },
+      { label: 'Кейс 4', props: { n: 4 } },
+    ],
+  },
+  {
+    // Case card 2046:1064. Тип по Figma выбирается номером кейса и шириной (CSS): Featured (кейс 1) на 1920–768,
+    // Mobile Featured на 380; Media Left / Right / Wide (кейсы 2–4) на 1920–1024; Mobile Stacked (на 768 — та же
+    // раскладка с тегом под фото) на 768 и 380. State=Hover — наведение на фото (Р1), отдельного prop нет.
+    name: 'CaseCard',
+    figma: '2046:1064',
+    component: CaseCardDemo,
+    variants: [
+      {
+        label: 'Type=Featured, State=Default',
+        props: { n: 1 },
+        widths: [1920, 1440, 1280, 1024, 768],
+      },
+      { label: 'Type=Mobile Featured, State=Default', props: { n: 1 }, widths: [380] },
+      {
+        label: 'Type=Media Left, State=Default',
+        props: { n: 2 },
+        widths: [1920, 1440, 1280, 1024],
+      },
+      {
+        label: 'Type=Media Right, State=Default',
+        props: { n: 3 },
+        widths: [1920, 1440, 1280, 1024],
+      },
+      {
+        label: 'Type=Media Wide, State=Default',
+        props: { n: 4 },
+        widths: [1920, 1440, 1280, 1024],
+      },
+      { label: 'Type=Mobile Stacked, State=Default · кейс 2', props: { n: 2 }, widths: [768, 380] },
+      { label: 'Type=Mobile Stacked, State=Default · кейс 3', props: { n: 3 }, widths: [768, 380] },
+      { label: 'Type=Mobile Stacked, State=Default · кейс 4', props: { n: 4 }, widths: [768, 380] },
+    ],
+  },
 ]
+
+// services-block 8:410: State × Type × Device. Desktop на ≥ 1024, Mobile на 768 и 380. Opened — через
+// initialOpen (только песочница; на сайте все блоки при загрузке закрыты, Р5). Тексты — из словаря локали (Р8).
+function servicesBlockVariants(): KitVariant[] {
+  const types = [
+    { type: 'branding', label: 'Branding' },
+    { type: 'marketing', label: 'Marketing' },
+    { type: 'interfaces', label: 'UX/UI' },
+    { type: 'support', label: 'Design Support' },
+  ] as const
+  const devices = [
+    { label: 'Desktop', widths: [1920, 1440, 1280, 1024] },
+    { label: 'Mobile', widths: [768, 380] },
+  ] as const
+  return (['Default', 'Opened'] as const).flatMap((state) =>
+    types.flatMap((t) =>
+      devices.map((d) => ({
+        label: `State=${state}, Type=${t.label}, Device=${d.label}`,
+        props: { type: t.type, initialOpen: state === 'Opened' },
+        widths: [...d.widths],
+      })),
+    ),
+  )
+}
 
 function checkboxFieldVariants(): KitVariant[] {
   const sizes = [
