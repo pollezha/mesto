@@ -24,7 +24,7 @@ const props = withDefaults(
 const emit = defineEmits<{ 'open-cookie-settings': [] }>()
 
 const { locale, t } = useI18n()
-const config = useRuntimeConfig()
+const consent = useConsent()
 
 const contactsId = useId()
 const docsId = useId()
@@ -32,11 +32,12 @@ const docsId = useId()
 const isRu = computed(() => locale.value === 'ru')
 
 // Р22 + ТЗ → «Аналитика»: «Настройки cookie» есть, только когда аналитика включена и задан хотя бы один ID.
-const showCookieSettings = computed(
-  () =>
-    props.cookieSettings ??
-    (Boolean(config.public.analyticsEnabled) && Boolean(config.public.gaId || config.public.ymId)),
-)
+const showCookieSettings = computed(() => props.cookieSettings ?? consent.enabled.value)
+
+function openCookieSettings(): void {
+  consent.reopen() // Р59: снова показывает баннер
+  emit('open-cookie-settings')
+}
 
 interface ContactItem {
   key: LinkKey
@@ -90,7 +91,7 @@ const documents = computed(() =>
                 class="footer__link"
                 :href="item.href"
                 :target="item.external ? '_blank' : undefined"
-                :rel="item.external ? 'noopener noreferrer' : undefined"
+                :rel="item.external ? 'noopener' : undefined"
               >
                 {{ item.label }}
               </a>
@@ -109,7 +110,7 @@ const documents = computed(() =>
               <button
                 type="button"
                 class="footer__link footer__link--button"
-                @click="emit('open-cookie-settings')"
+                @click="openCookieSettings"
               >
                 {{ t('footer.cookies') }}
               </button>
