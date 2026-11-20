@@ -19,6 +19,10 @@ import CaptionItemDemo from './demos/CaptionItemDemo.vue'
 import ServicesBlock from '~/components/ServicesBlock.vue'
 import CaseImageDemo from './demos/CaseImageDemo.vue'
 import CaseCardDemo from './demos/CaseCardDemo.vue'
+import ServiceCardDemo from './demos/ServiceCardDemo.vue'
+import InfoCardDemo from './demos/InfoCardDemo.vue'
+import CookieBanner from '~/components/CookieBanner.vue'
+import DocumentPageDemo from './demos/DocumentPageDemo.vue'
 
 // Реестр песочницы /__kit. component-builder добавляет запись, когда верстает компонент:
 // все варианты из Figma, которые встречаются на сайте, с теми же именами свойств.
@@ -265,6 +269,25 @@ export const kit: KitEntry[] = [
     ],
   },
   {
+    // Cookie banner fixed → в песочнице staticPosition (в потоке, не зависит от cookie и конфига).
+    // Какой вариант на какой ширине (Р66): Desktop на ≥ 1024, Mobile на 768 и 380; Locale — язык страницы.
+    name: 'CookieBanner',
+    figma: '2151:353',
+    component: CookieBanner,
+    variants: [
+      {
+        label: 'Device=Desktop, Locale=RU / EN',
+        props: { staticPosition: true },
+        widths: [1920, 1440, 1280, 1024],
+      },
+      {
+        label: 'Device=Mobile, Locale=RU / EN',
+        props: { staticPosition: true },
+        widths: [768, 380],
+      },
+    ],
+  },
+  {
     // NavBar fixed → в песочнице staticPosition (в потоке). Какой вариант на какой ширине:
     // Desktop на ≥ 1024, Mobile на 768 и 380; Mobile-op — открытое меню на < 1024 (Р53, В28).
     // Вид выбирает медиазапрос на 1024, поэтому ширина страницы = ширина экрана.
@@ -468,6 +491,72 @@ export const kit: KitEntry[] = [
       { label: 'Type=Mobile Stacked, State=Default · кейс 2', props: { n: 2 }, widths: [768, 380] },
       { label: 'Type=Mobile Stacked, State=Default · кейс 3', props: { n: 3 }, widths: [768, 380] },
       { label: 'Type=Mobile Stacked, State=Default · кейс 4', props: { n: 4 }, widths: [768, 380] },
+    ],
+  },
+  {
+    // Locale (RU / EN) — язык страницы: /__kit и /en/__kit. Size: Default на 1920–768, Small на 380 (по экранам
+    // «Контактов», Р16). Высота Mail в песочнице — min-height ступени; в ряду страницы почта тянется до соседней.
+    name: 'InfoCard',
+    figma: '2045:997',
+    component: InfoCardDemo,
+    variants: [
+      {
+        label: 'Type=Socials, Size=Default',
+        props: { type: 'socials', size: 'default' },
+        widths: [1920, 1440, 1280, 1024, 768],
+      },
+      {
+        label: 'Type=Mail, Size=Default',
+        props: { type: 'mail', size: 'default' },
+        widths: [1920, 1440, 1280, 1024, 768],
+      },
+      {
+        label: 'Type=Socials, Size=Small',
+        props: { type: 'socials', size: 'small' },
+        widths: [380],
+      },
+      { label: 'Type=Mail, Size=Small', props: { type: 'mail', size: 'small' }, widths: [380] },
+    ],
+  },
+  {
+    // Size: Default на 1920–768, Small на 380 («Какой вариант на какой ширине»). Текст — из словаря
+    // (короткий: «Логотип»; длинный: «Сайты, лендинги, интернет-магазины»), язык — /__kit и /en/__kit.
+    name: 'ServiceCard',
+    figma: '2045:972',
+    component: ServiceCardDemo,
+    variants: [
+      {
+        label: 'Size=Default · короткий текст',
+        props: { size: 'default', item: 'short' },
+        widths: [1920, 1440, 1280, 1024, 768],
+      },
+      {
+        label: 'Size=Default · длинный текст',
+        props: { size: 'default', item: 'long' },
+        widths: [1920, 1440, 1280, 1024, 768],
+      },
+      {
+        label: 'Size=Small · короткий текст',
+        props: { size: 'small', item: 'short' },
+        widths: [380],
+      },
+      {
+        label: 'Size=Small · длинный текст',
+        props: { size: 'small', item: 'long' },
+        widths: [380],
+      },
+    ],
+  },
+  {
+    // Шаблон документов и 404; в Figma отдельного компонента нет (фреймы 2151:3340 … 2151:6923, только 1920 и 380).
+    // RU/EN — по локали песочницы. Document — «Документ готовится» (Р19), длинный заголовок — проверка переноса.
+    name: 'DocumentPage',
+    figma: '2151:3340',
+    component: DocumentPageDemo,
+    variants: [
+      { label: 'Document', props: { kind: 'document' } },
+      { label: 'Document · long title', props: { kind: 'document-long' } },
+      { label: '404', props: { kind: 'not-found' } },
     ],
   },
 ]
