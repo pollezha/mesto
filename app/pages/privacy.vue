@@ -1,7 +1,12 @@
 <script setup lang="ts">
-// TODO: Политика обработки персональных данных — ТЗ → «Документы и 404» (Р19, Р45).
+// Политика обработки персональных данных — ТЗ → «Документы и 404» (Р19, Р45), SEO. RU /privacy и EN /en/privacy (Privacy Policy), пара hreflang.
+const { t } = useI18n()
+usePageSeo({
+  title: t('meta.document.title', { name: t('footer.privacy') }),
+  alternates: true,
+})
 </script>
 
 <template>
-  <main />
+  <DocumentPage :title="$t('footer.privacy')" />
 </template>
