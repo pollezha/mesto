@@ -193,8 +193,6 @@ describe('useLeadForm', () => {
     },
   )
 
-  // этап CookieBanner: reportLeadGoal пока заглушка, проверка согласия появится вместе с useConsent
-  it.todo(
-    'после успеха — generate_lead (GA4) и reachGoal("lead") только при согласии (Р22) — этап CookieBanner',
-  )
+  // Цели GA4 и Метрики только при согласии (Р22) проверены в tests/unit/analytics.test.ts;
+  // здесь reportLeadGoal замокан, вызов после 200 — в тесте выше.
 })
