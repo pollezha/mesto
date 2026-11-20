@@ -1,3 +1,5 @@
+import { SITE_URL, sitePaths } from './config/site'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 // Стек и окружение — docs/package/07-*.md («Инфраструктура»).
 export default defineNuxtConfig({
@@ -23,14 +25,15 @@ export default defineNuxtConfig({
       { code: 'ru', language: 'ru', file: 'ru.json' },
       { code: 'en', language: 'en', file: 'en.json' },
     ],
-    // TODO: baseUrl из NUXT_PUBLIC_SITE_URL для canonical и hreflang (ТЗ → SEO)
   },
 
   runtimeConfig: {
     // Серверные переменные (TELEGRAM_*, SMTP_*, MAIL_*) здесь не заводятся: без префикса NUXT_
     // они не переопределяют runtimeConfig в рантайме. Их читает server/utils/env.ts (Н1).
     public: {
-      siteUrl: '',
+      // Домен для canonical, hreflang и sitemap. Значение по умолчанию — из docs («Переменные окружения»);
+      // NUXT_PUBLIC_SITE_URL переопределяет его при сборке (пререндер берёт значение во время сборки) и в рантайме.
+      siteUrl: SITE_URL,
       analyticsEnabled: false,
       gaId: '',
       ymId: '',
@@ -39,10 +42,24 @@ export default defineNuxtConfig({
 
   nitro: {
     preset: 'node-server',
+    hooks: {
+      // 404 отвечает статусом 404, а пререндер считает не-200 ошибкой и файл не пишет. Для /404, /en/404 и их
+      // payload (нужен гидратации 404.html) ошибка снимается только при статусе 404 — другие ошибки остаются.
+      'prerender:generate'(route) {
+        const is404Page = /^\/(en\/)?404(\/_payload\.json(\?.*)?)?$/.test(route.route)
+        if (is404Page && route.error?.statusCode === 404) {
+          delete route.error
+        }
+      },
+    },
     prerender: {
       crawlLinks: true,
-      // TODO: все маршруты из ТЗ → «Маршруты»; 404 пререндерится дважды: /404.html и /en/404.html
-      routes: ['/'],
+      // Все маршруты из ТЗ → «Маршруты» (config/site.ts); 404 пререндерится дважды: /404.html и /en/404.html (роуты /404 и /en/404 → файлы 404.html;
+      // роут /404.html Nuxt отдаёт как пустую SPA-оболочку, поэтому не он);
+      // sitemap.xml и robots.txt — серверные маршруты, при сборке становятся статическими файлами.
+      routes: [...sitePaths, '/404', '/en/404', '/sitemap.xml', '/robots.txt'],
+      // Файлы <путь>.html (privacy.html), а не privacy/index.html: адреса без слэша, try_files nginx.
+      autoSubfolderIndex: false,
     },
   },
 })

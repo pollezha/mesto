@@ -7,7 +7,17 @@ import onestCyrillic500 from '~/assets/fonts/onest-cyrillic-500-normal.woff2?url
 import onestLatin400 from '~/assets/fonts/onest-latin-400-normal.woff2?url'
 import onestLatin500 from '~/assets/fonts/onest-latin-500-normal.woff2?url'
 
+// <html lang> по локали — на всех страницах (ТЗ → «SEO»).
+const { locale, locales } = useI18n()
+const htmlLang = computed(() => {
+  const current = locales.value.find(
+    (item) => typeof item !== 'string' && item.code === locale.value,
+  )
+  return (typeof current === 'object' && current.language) || locale.value
+})
+
 useHead({
+  htmlAttrs: { lang: htmlLang },
   link: [onestLatin400, onestLatin500, onestCyrillic400, onestCyrillic500].map((href) => ({
     rel: 'preload',
     as: 'font',
