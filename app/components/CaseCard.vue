@@ -1,7 +1,303 @@
 <script setup lang="ts">
-// TODO: CaseCard — docs «Компоненты» → «Главная: кейсы и услуги»; Figma: Case card 2046:1064.
+// CaseCard — карточка кейса на главной (Figma Case card 2046:1064). Раскладки по Figma:
+//   n=1 Featured (≥ 768) / Mobile Featured (380), n=2 Media Left, n=3 Media Right, n=4 Media Wide (≥ 1024),
+//   на 768 и 380 кейсы 2–4 — Stacked. Тип выбирается номером кейса и шириной (медиазапросами, без JS):
+//   страница передаёт только n, а не Type Figma, который смешивает кейс и ширину.
+// Эталон — экраны главной (Р3, Р44): RU 35:2169 @1920, 2063:1352 @1440, 2063:1464 @1280, 2064:1422 @1024,
+//   2064:1534 @768, 35:2468 @380; EN 51:13655 @1920, 2065:1486 @1440, 2065:1663 @1280, 2066:1737 @1024 …;
+//   геометрия EN такая же, кроме ширины текстовой колонки кейса 2 на 1440 и 1280 (Р3, Р44: эталон — экран своей локали).
+// «Компоненты» → Case card; ТЗ → «Главная» п. 2. Кейс 1 целиком — одна ссылка на кейс (Р31, фокус Р46);
+// кейсы 2–4 с тегом «скоро кейс» — без ссылки, курсор обычный, hover фото есть (Р7, Р1 — в CaseImage).
+// Названия кейсов — h3 (Р56). Раскладка раздела «Проекты» (отступы между карточками, колонки) — страница.
+// Фото — CaseImage (радиус и пропорции рамки по кейсу и ширине — там).
+// Рамки фото, текстовые колонки, позиции и высота Featured на ≥ 1024 — доли ширины карточки (Layout фрейма своей
+// ширины: 998 / 1250 / 1408 / 1880); на контрольных ширинах равны фрейму, между ними растут вместе с рядом.
+// На 768 и 380 — ширина карточки. Перенос в названиях — по ширине блока, ТЗ п. 6 (ручных переносов нет).
+// TODO(question): new Н26 — размеры карточек на ширинах между контрольными (доли ширины ряда, а не фиксированные px).
+import CaseImage from '~/components/CaseImage.vue'
+import Tag from '~/components/Tag.vue'
+
+const props = defineProps<{
+  /** Номер кейса на главной (1–4): 1 — Featured, 2 — Media Left, 3 — Media Right, 4 — Media Wide. */
+  n: 1 | 2 | 3 | 4
+  /** Атрибут loading фото. По умолчанию: кейс 1 — eager, кейсы 2–4 — lazy. */
+  loading?: 'lazy' | 'eager'
+}>()
+
+const { locale } = useI18n()
+
+// TODO(question): new Н25 — кейс 1 на 380/768 в первом экране (LCP), на ≥ 1024 ниже; атрибут один на все ширины.
+const imgLoading = computed(() => props.loading ?? (props.n === 1 ? 'eager' : 'lazy'))
+
+const NuxtLinkLocale = resolveComponent('NuxtLinkLocale')
+
+// Р31: страница кейса. Только кейс 1 — ссылка.
+const root = computed(() => (props.n === 1 ? NuxtLinkLocale : 'div'))
+const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebranding' } : {}))
 </script>
 
 <template>
-  <div />
+  <component
+    :is="root"
+    v-bind="rootProps"
+    class="case-card"
+    :class="[`case-card--${n}`, { 'case-card--en': locale === 'en' }]"
+  >
+    <CaseImage
+      class="case-card__media"
+      :n="n"
+      :alt="$t(`alt.home.case${n}`)"
+      :loading="imgLoading"
+    />
+    <div class="case-card__text">
+      <!-- Tag: Default на 1920–1280, Small на 1024–380 («Компоненты»); оба в DOM, лишний скрыт CSS -->
+      <template v-if="n !== 1">
+        <Tag class="case-card__tag case-card__tag--default" size="default" />
+        <Tag class="case-card__tag case-card__tag--small" size="small" />
+      </template>
+      <h3 class="case-card__title">{{ $t(`home.cases.case${n}.title`) }}</h3>
+      <p class="case-card__year">{{ $t(`home.cases.case${n}.year`) }}</p>
+    </div>
+  </component>
 </template>
+
+<style scoped>
+/* ---------- База = 380 (Mobile Featured 2046:1040, Mobile Stacked 2046:1050; экран 35:2468) ---------- */
+.case-card {
+  /* Радиус карточки Featured: Radius/28 на всех ширинах (20 / 17 / 18 / 21 / 22 / 28) */
+  --cc-radius: var(--radius-28);
+  /* Шаг заголовок–год и тег–заголовок: Spacing/16 на всех ширинах (4 / 10 / 10 / 12 / 13 / 16) */
+  --cc-text-gap: var(--space-16);
+  --cc-stack-gap: var(--space-20); /* Figma 35:2479 @380: фото → заголовок, 8 */
+  --cc-tag-inset: var(--space-28); /* Figma 35:2480 @380: тег от угла фото, 16 */
+  --cc-feat-pad: var(--space-24); /* Figma 35:2475 @380: 12 */
+  /* TODO(question): new Н24 — высота Featured на 380 в EN (271) отличается от RU (303), здесь по RU */
+  --cc-feat-pad-bottom: var(--space-28); /* Figma 35:2475 @380: 303 − (247 + 40) = 16; Н24 */
+  --cc-feat-gap: 40px; /* Figma 35:2475 @380: фото (низ 207) → заголовок (247); Н24 */
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cc-stack-gap);
+  min-width: 0;
+  color: var(--color-black);
+  text-decoration: none;
+}
+
+.case-card--1 {
+  gap: var(--cc-feat-gap);
+  padding: var(--cc-feat-pad) var(--cc-feat-pad) var(--cc-feat-pad-bottom);
+  border-radius: var(--cc-radius);
+  background: var(--color-black);
+  color: var(--color-extra-white);
+}
+
+.case-card__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--cc-text-gap);
+  min-width: 0;
+}
+
+.case-card__title {
+  margin: 0;
+  font-size: var(--fs-h5);
+  line-height: var(--lh-h5);
+  font-weight: var(--fw-medium);
+}
+
+.case-card__year {
+  display: none; /* на 380 года нет ни у одного кейса */
+  margin: 0;
+  font-size: var(--fs-txt-3);
+  line-height: var(--lh-txt-3);
+  font-weight: var(--fw-regular);
+}
+
+.case-card--1 .case-card__year {
+  color: var(--color-white);
+}
+
+.case-card .case-card__tag--default {
+  display: none;
+}
+
+/* 380: тег поверх фото в правом верхнем углу (отступ 16), заголовок под фото */
+.case-card .case-card__tag--small {
+  position: absolute;
+  top: var(--cc-tag-inset);
+  right: var(--cc-tag-inset);
+}
+
+/* ---------- 768 (Featured 2064:1545, Stacked 2064:1549) ---------- */
+@media (min-width: 768px) {
+  .case-card {
+    --cc-stack-gap: 16px; /* Figma 2064:1549 @768: фото → блок тега и заголовка */
+    --cc-feat-pad: var(--space-40); /* Figma 2064:1544 @768: 24 */
+    --cc-feat-pad-bottom: var(--space-40); /* Figma 2064:1544 @768: 24 */
+    --cc-feat-gap: var(--space-40); /* Figma 2064:1544 @768: текст (низ 84) → фото (108), 24 */
+  }
+
+  /* Featured на 768: текст сверху, фото под ним */
+  .case-card--1 .case-card__text {
+    order: -1;
+  }
+
+  .case-card--1 .case-card__year {
+    display: block; /* на 768 год только у кейса 1 */
+  }
+
+  /* тег уходит из фото в поток: под фото, над заголовком */
+  .case-card .case-card__tag--small {
+    position: static;
+  }
+}
+
+/* ---------- ≥ 1024: Featured — абсолютный текст в углу; Media — ряд (Media Left / Right / Wide) ----------
+   Все размеры — числа фрейма своей ширины (без единиц) и доли ширины карточки --cc-layout (ширина Layout):
+   calc(число / --cc-layout * 100%). На контрольной ширине карточка = Layout, значения равны фрейму. Н26 */
+@media (min-width: 1024px) {
+  .case-card {
+    /* Figma 2064:1431 (Layout), 2064:1432 / 2064:1437 / 2064:1444 / 2064:1451 @1024 */
+    --cc-layout: 998; /* 2064:1431 */
+    --cc-feat-h: 671; /* 2064:1432 */
+    --cc-feat-img-top: 127; /* 2064:1433 */
+    --cc-feat-text-x: 21; /* 2064:1434 */
+    --cc-feat-text-y: 23; /* 2064:1434 */
+    --cc-feat-text-w: 622; /* 2064:1434 */
+    --cc-text-w-2: 385; /* 2064:1439; EN 2066:1757 — то же */
+    --cc-text-w-3: 381; /* 2064:1445 */
+    --cc-media-gap: var(--space-32); /* фото ↔ текст: 21 / 24 / 26 / 32 */
+  }
+
+  .case-card:not(.case-card--1) {
+    flex-direction: row;
+    gap: var(--cc-media-gap);
+  }
+
+  .case-card--1 {
+    display: block;
+    aspect-ratio: var(--cc-layout) / var(--cc-feat-h);
+    padding: 0;
+  }
+
+  .case-card--1 .case-card__media {
+    position: absolute;
+    top: calc(var(--cc-feat-img-top) / var(--cc-feat-h) * 100%);
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .case-card--1 .case-card__text {
+    position: absolute;
+    top: calc(var(--cc-feat-text-y) / var(--cc-feat-h) * 100%);
+    left: calc(var(--cc-feat-text-x) / var(--cc-layout) * 100%);
+    width: calc(var(--cc-feat-text-w) / var(--cc-layout) * 100%);
+  }
+
+  /* фото — рамка своей ширины фрейма как доля ряда (число --case-image-w, пропорции и радиус — в CaseImage) */
+  .case-card .case-card__media {
+    flex: none;
+    width: calc(var(--case-image-w) / var(--cc-layout) * 100%);
+  }
+
+  .case-card .case-card__tag--small {
+    position: static;
+  }
+
+  .case-card--2 .case-card__text {
+    flex: none;
+    width: calc(var(--cc-text-w-2) / var(--cc-layout) * 100%);
+  }
+
+  /* Media Right: текст слева от фото, прижат к низу, текст и тег по правому краю */
+  .case-card--3 {
+    justify-content: flex-end;
+    align-items: flex-end;
+  }
+
+  .case-card--3 .case-card__text {
+    order: -1;
+    flex: none;
+    align-items: flex-end;
+    width: calc(var(--cc-text-w-3) / var(--cc-layout) * 100%);
+    text-align: right;
+  }
+
+  /* Media Wide: текст справа от фото, прижат к низу, занимает остаток ряда */
+  .case-card--4 {
+    align-items: flex-end;
+  }
+
+  .case-card--4 .case-card__text {
+    flex: 1 1 0;
+  }
+
+  .case-card__year {
+    display: block;
+  }
+}
+
+/* ---------- 1280 (Layout 2063:1473; 2063:1474 …; EN 2065:1663 …) ---------- */
+@media (min-width: 1280px) {
+  .case-card {
+    --cc-layout: 1250; /* 2063:1473 */
+    --cc-feat-h: 839; /* 2063:1474 */
+    --cc-feat-img-top: 159; /* 2063:1475 */
+    --cc-feat-text-x: 27; /* 2063:1476 */
+    --cc-feat-text-y: 29; /* 2063:1476 */
+    --cc-feat-text-w: 711; /* 2063:1476 */
+    --cc-text-w-2: 543; /* 2063:1481 */
+    --cc-text-w-3: 476; /* 2063:1487 */
+  }
+
+  .case-card--en {
+    --cc-text-w-2: 481; /* Figma 2065:1683 @1280 (EN) */
+  }
+
+  .case-card .case-card__tag--default {
+    display: inline-flex;
+  }
+
+  .case-card .case-card__tag--small {
+    display: none;
+  }
+}
+
+/* ---------- 1440 (Layout 2063:1361; 2063:1362 …; EN 2065:1486 …) ---------- */
+@media (min-width: 1440px) {
+  .case-card {
+    --cc-layout: 1408; /* 2063:1361 */
+    --cc-feat-h: 944; /* 2063:1362 */
+    --cc-feat-img-top: 179; /* 2063:1363 */
+    --cc-feat-text-x: 30; /* 2063:1364 */
+    --cc-feat-text-y: 33; /* 2063:1364 */
+    --cc-feat-text-w: 799; /* 2063:1364 */
+    --cc-text-w-2: 627; /* 2063:1369 */
+    --cc-text-w-3: 536; /* 2063:1375 */
+  }
+
+  .case-card--en {
+    --cc-text-w-2: 541; /* Figma 2065:1506 @1440 (EN) */
+  }
+}
+
+/* ---------- 1920 (Layout 35:2178; 35:2179 …; EN 51:13655 …) ---------- */
+@media (min-width: 1920px) {
+  .case-card {
+    --cc-layout: 1880; /* 35:2178 */
+    --cc-feat-h: 1258; /* 35:2179 */
+    --cc-feat-img-top: 199; /* 35:2180 */
+    --cc-feat-text-x: 40; /* 35:2181 */
+    --cc-feat-text-y: 44; /* 35:2181 */
+    --cc-feat-text-w: 977; /* 35:2181 */
+    --cc-text-w-2: 721; /* 35:2186 */
+    --cc-text-w-3: 714; /* 35:2190 */
+  }
+
+  .case-card--en {
+    --cc-text-w-2: 721; /* Figma 51:13675 @1920 (EN) — как RU */
+  }
+}
+</style>
