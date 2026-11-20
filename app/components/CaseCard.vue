@@ -13,7 +13,7 @@
 // Рамки фото, текстовые колонки, позиции и высота Featured на ≥ 1024 — доли ширины карточки (Layout фрейма своей
 // ширины: 998 / 1250 / 1408 / 1880); на контрольных ширинах равны фрейму, между ними растут вместе с рядом.
 // На 768 и 380 — ширина карточки. Перенос в названиях — по ширине блока, ТЗ п. 6 (ручных переносов нет).
-// TODO(question): new Н26 — размеры карточек на ширинах между контрольными (доли ширины ряда, а не фиксированные px).
+// Н26 — решение владельца 20.11.2026: размеры карточек на промежуточных ширинах — доли ширины ряда, пропорционально.
 import CaseImage from '~/components/CaseImage.vue'
 import Tag from '~/components/Tag.vue'
 
@@ -26,7 +26,7 @@ const props = defineProps<{
 
 const { locale } = useI18n()
 
-// TODO(question): new Н25 — кейс 1 на 380/768 в первом экране (LCP), на ≥ 1024 ниже; атрибут один на все ширины.
+// Н25 — решение владельца 20.11.2026: кейс 1 — eager (на 380/768 в первом экране, LCP), остальные lazy.
 const imgLoading = computed(() => props.loading ?? (props.n === 1 ? 'eager' : 'lazy'))
 
 const NuxtLinkLocale = resolveComponent('NuxtLinkLocale')
@@ -71,7 +71,7 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   --cc-stack-gap: var(--space-20); /* Figma 35:2479 @380: фото → заголовок, 8 */
   --cc-tag-inset: var(--space-28); /* Figma 35:2480 @380: тег от угла фото, 16 */
   --cc-feat-pad: var(--space-24); /* Figma 35:2475 @380: 12 */
-  /* TODO(question): new Н24 — высота Featured на 380 в EN (271) отличается от RU (303), здесь по RU */
+  /* Н24 — решение владельца 20.11.2026: высота Featured на 380 по RU (в EN Figma 271, здесь по RU) */
   --cc-feat-pad-bottom: var(--space-28); /* Figma 35:2475 @380: 303 − (247 + 40) = 16; Н24 */
   --cc-feat-gap: 40px; /* Figma 35:2475 @380: фото (низ 207) → заголовок (247); Н24 */
 

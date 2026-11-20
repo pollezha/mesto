@@ -23,8 +23,7 @@ const variantColor = computed<LogoColor>(() => props.color ?? 'Blue')
 const variantLocal = computed<LogoLocal>(() => props.local ?? (locale.value === 'en' ? 'EN' : 'RU'))
 
 // Текст альтернативы — текущей локали страницы.
-// TODO(question): new Н8 — ключа для текстовой альтернативы логотипа нет в «Контенте»;
-// до ответа logo.label — слово логотипа из «Компонентов» → Logo / Figma 30:2908.
+// Н8 — решение владельца 20.11.2026: оставить «МЕСТО» / «MESTO» (logo.label — слово логотипа, Figma 30:2908).
 const label = computed(() => t('logo.label'))
 </script>
 

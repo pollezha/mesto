@@ -277,7 +277,7 @@ function onInput(event: Event) {
   --_input-lh: var(--lh-txt-3);
   --_input-hint-fs: var(--fs-caption-2); /* Caption 2 своей ширины */
   --_input-hint-lh: var(--lh-caption-2);
-  /* TODO(question): new Н11 — Error на 1440–1024 ни на одном экране нет; до ответа — 12 px компонента на всех ширинах */
+  /* Н11 — решение владельца 20.11.2026: отступ подсказки 12 px на всех ширинах (Error на 1440–1024 на экранах нет) */
   --_input-hint-gap: 12px; /* Figma 2044:901 @1920 */
   --_input-field-height: 68px; /* Figma I2074:5832;2045:888 @1024 */
   --_input-textarea-pad-top: 20px; /* Figma I2074:5832;2045:896 @1024 */
@@ -357,7 +357,7 @@ function onInput(event: Event) {
     --_input-lh: var(--lh-txt-3);
     --_input-hint-fs: var(--fs-caption-2);
     --_input-hint-lh: var(--lh-caption-2);
-    --_input-hint-gap: 12px; /* TODO(question): new Н11 — как у Default */
+    --_input-hint-gap: 12px; /* Н11 — решение владельца 20.11.2026: как у Default */
     --_input-field-height: 68px;
     --_input-textarea-pad-top: 20px;
     --_input-textarea-pad-bottom: 51px;
