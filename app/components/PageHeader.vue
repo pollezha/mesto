@@ -38,9 +38,9 @@ const { locale } = useI18n()
  * Значения вариантов Width — компонент Page header, Figma 2046:979 (RU; EN отличается только шириной логотипа).
  * Верхний паддинг на ≥ 1024 = --space-40, правый = --space-60 (точное совпадение с токеном своей ширины);
  * остальное — локальные переменные с источником. Радиус снизу = --radius-header на всех ширинах.
- * TODO(question): new Н13 — растры фона собраны из SVG-описания заливки Figma, а не выгружены отдельным слоем.
- * TODO(question): new Н9 — Languages в шапке на 1440/1280/1024 масштабирован (не токены Caption 2);
- * до ответа — значения компонента Page header, заданы через публичные переменные Languages.
+ * Н13 — решение владельца 20.11.2026: растры фона собраны из SVG-описания заливки Figma и растягиваются.
+ * Н9 — решение владельца 20.11.2026: Languages в шапке — как в полосе Menu главной (значения по умолчанию
+ * Languages: Caption 2 своей ширины, gap --space-32), без масштабирования из компонента Page header.
  */
 .page-header {
   min-width: 0; /* не расширяться в grid/flex-родителе */
@@ -111,10 +111,6 @@ const { locale } = useI18n()
     --_ph-menu-inset: 5px; /* Figma 2141:248 @1024 (лого на 39 = правому паддингу) */
     --_ph-logo-ru: 150.991px; /* Figma 2141:249 @1024 */
     --_ph-logo-en: 152.426px; /* Figma 2141:282 @1024 */
-    --_ph-lang-fs: 11.676px; /* Figma 2141:250 @1024, Н9 */
-    --_ph-lang-lh: 14.27px; /* Figma 2141:250 @1024, Н9 */
-    --_ph-lang-gap: 20.757px; /* Figma 2141:250 @1024, Н9 */
-    --_ph-lang-pad-y: 20.108px; /* Figma 2141:250 @1024, Н9 */
 
     background-image: image-set(
       url('~/assets/images/page-header-bg@1024.webp') 1x,
@@ -137,13 +133,6 @@ const { locale } = useI18n()
   .page-header--en .page-header__logo {
     width: var(--_ph-logo-en);
   }
-
-  .page-header__languages {
-    --languages-font-size: var(--_ph-lang-fs);
-    --languages-line-height: var(--_ph-lang-lh);
-    --languages-gap: var(--_ph-lang-gap);
-    --languages-pad-y: var(--_ph-lang-pad-y);
-  }
 }
 
 @media (min-width: 1280px) {
@@ -153,10 +142,6 @@ const { locale } = useI18n()
     --_ph-pad-left: 40px; /* Figma 2141:257 @1280 */
     --_ph-logo-ru: 172.99px; /* Figma 2141:259 @1280 */
     --_ph-logo-en: 174.634px; /* Figma 2141:308 @1280 */
-    --_ph-lang-fs: 14.414px; /* Figma 2141:260 @1280, Н9 */
-    --_ph-lang-lh: 17.297px; /* Figma 2141:260 @1280, Н9 */
-    --_ph-lang-gap: 23.063px; /* Figma 2141:260 @1280, Н9 */
-    --_ph-lang-pad-y: 22.342px; /* Figma 2141:260 @1280, Н9 */
 
     background-image: image-set(
       url('~/assets/images/page-header-bg@1280.webp') 1x,
@@ -173,10 +158,6 @@ const { locale } = useI18n()
     --_ph-menu-inset: 6px; /* Figma 2141:268 @1440 */
     --_ph-logo-ru: 183.989px; /* Figma 2141:269 @1440 */
     --_ph-logo-en: 185.738px; /* Figma 2141:334 @1440 */
-    --_ph-lang-fs: 17.243px; /* Figma 2141:270 @1440, Н9 */
-    --_ph-lang-lh: 20.378px; /* Figma 2141:270 @1440, Н9 */
-    --_ph-lang-gap: 25.081px; /* Figma 2141:270 @1440, Н9 */
-    --_ph-lang-pad-y: 24.297px; /* Figma 2141:270 @1440, Н9 */
 
     background-image: image-set(
       url('~/assets/images/page-header-bg@1440.webp') 1x,
@@ -193,11 +174,6 @@ const { locale } = useI18n()
     --_ph-menu-inset: 7px; /* Figma 2046:938 @1920 */
     --_ph-logo-ru: 215.987px; /* Figma 2046:939 @1920 */
     --_ph-logo-en: 218.04px; /* Figma 2046:949 @1920 */
-    /* Languages на 1920 — значения по умолчанию (Figma 2046:941), без масштабирования */
-    --_ph-lang-fs: var(--fs-caption-2);
-    --_ph-lang-lh: var(--lh-caption-2);
-    --_ph-lang-gap: var(--space-32);
-    --_ph-lang-pad-y: 31px; /* Figma 2046:941 @1920 */
 
     background-image: image-set(
       url('~/assets/images/page-header-bg@1920.webp') 1x,

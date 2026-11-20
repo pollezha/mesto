@@ -86,7 +86,7 @@ function onDiscuss(event: MouseEvent) {
 }
 
 // ---------- Бургер: Mobile ⇄ Mobile-op ----------
-// TODO(question): new Н14 — доступное имя бургера (в «Контенте» нет), до ответа nav.menu = «Меню» / «Menu»
+// Н14 — решение владельца 20.11.2026: доступное имя бургера nav.menu = «Меню» / «Menu»
 function toggleMenu() {
   open.value = !open.value
 }
@@ -258,8 +258,11 @@ onBeforeUnmount(() => {
   --_nav-op-cta-pad-x: 24px; /* Figma 38:9981 */
   --_nav-op-cta-radius: 24px; /* Figma 38:9981 */
   --_nav-op-cta-gap: 14px; /* Figma 38:9981 */
-  --_nav-op-cta-fs: var(--fs-h4); /* Heading 4: 28 на 380 (Figma 38:9982) */
-  --_nav-op-cta-lh: var(--lh-h4);
+  /* Н15 — решение владельца 20.11.2026: кегль уменьшен до 23, чтобы текст влез в одну строку
+     (замер: наибольший целый кегль, при котором «Обсудить проект ↗» / «Discuss a project ↗» в одну строку
+     в кнопке во всю ширину панели на 380 и 360, RU и EN: 380 — 25/26, 360 — 23/24). Межстрочный = кегль, иконка = 1em. */
+  --_nav-op-cta-fs: 23px;
+  --_nav-op-cta-lh: 23px;
   --_nav-z: 100; /* слой поверх контента (ТЗ → «Общие правила» п. 2), не из Figma */
 
   position: fixed;
@@ -389,7 +392,7 @@ onBeforeUnmount(() => {
 }
 
 /* Ссылка-кнопка «Обсудить проект» (Figma Link 38:9981). Во всю ширину панели (Р53, В28).
- * TODO(question): new Н15 — на 380 кнопка 322 шире внутренней ширины панели (356 − 56 = 300): текст переносится */
+ * Н15 — решение владельца 20.11.2026: кегль уменьшен до 23 (см. --_nav-op-cta-fs), текст в одну строку. */
 .navbar__cta {
   display: flex;
   align-items: center;
