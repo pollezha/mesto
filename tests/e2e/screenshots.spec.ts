@@ -21,12 +21,21 @@ for (const page of PAGES) {
       await browserPage.emulateMedia({ reducedMotion: 'reduce' })
       await browserPage.goto(page[locale])
       await browserPage.evaluate(() => document.fonts.ready)
+      // Full-page снимок не прокручивает страницу: lazy-картинки ниже первого экрана иначе остаются пустыми.
+      await browserPage.evaluate(async () => {
+        const images = Array.from(document.images)
+        for (const img of images) img.loading = 'eager'
+        await Promise.all(images.map((img) => img.decode().catch(() => undefined)))
+      })
       await browserPage.screenshot({
         path: `screenshots/${locale}/${page.name}@${width}.png`,
         fullPage: true,
         animations: 'disabled',
       })
-      testInfo.annotations.push({ type: 'screenshot', description: `${locale}/${page.name}@${width}` })
+      testInfo.annotations.push({
+        type: 'screenshot',
+        description: `${locale}/${page.name}@${width}`,
+      })
     })
   }
 }
