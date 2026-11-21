@@ -1,15 +1,24 @@
-# Заготовка — docs «Инфраструктура» → «Деплой». Доводит агент devops.
-# push в main → линтер и сборка → два образа (стадии app и nginx) с тегом sha в GHCR →
-# по SSH на VPS: docker compose pull && docker compose up -d.
+# Инфраструктура → «Деплой». push в main → проверки и сборка → два образа (стадии app и nginx) с тегом sha
+# в GHCR → по SSH на VPS: docker compose pull && docker compose up -d. Откат — запуск предыдущего тега образов.
+#
+# Нужно от владельца (Settings → Secrets and variables → Actions):
+#   secrets: SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, SSH_KNOWN_HOSTS (вывод ssh-keyscan для VPS), SSH_PORT (необязательно);
+#   variables: DEPLOY_ENABLED=true (включает job deploy), DEPLOY_PATH (папка с docker-compose.yml на VPS),
+#              NUXT_PUBLIC_ANALYTICS_ENABLED, NUXT_PUBLIC_GA_ID, NUXT_PUBLIC_YM_ID, NUXT_PUBLIC_SITE_URL (не секреты:
+#              попадают в пререндеренный HTML при сборке образа nginx; пусто — значения по умолчанию).
+# Секреты приложения (TELEGRAM_*, SMTP_*, MAIL_*) в CI не нужны: они лежат в файле окружения на VPS.
 name: deploy
 
 on:
   push:
     branches: [main]
 
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
 permissions:
   contents: read
-  packages: write
 
 jobs:
   check:
@@ -26,18 +35,72 @@ jobs:
 
   images:
     needs: check
-    # TODO: включить, когда будут владелец GHCR и секреты
-    if: ${{ false }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      # GHCR требует имя в нижнем регистре.
+      OWNER: ${{ github.repository_owner }}
     steps:
       - uses: actions/checkout@v4
-      # TODO: docker/login-action (ghcr.io), docker/build-push-action для target app и target nginx,
-      #       теги ghcr.io/<владелец>/mesto-app:${{ github.sha }} и ghcr.io/<владелец>/mesto-nginx:${{ github.sha }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Имя владельца строчными
+        run: echo "OWNER_LC=${OWNER,,}" >> "$GITHUB_ENV"
+      - name: Образ app
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: app
+          push: true
+          tags: ghcr.io/${{ env.OWNER_LC }}/mesto-app:${{ github.sha }}
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,scope=app,mode=max
+      - name: Образ nginx (страницы пререндерятся при сборке — публичные переменные передаются build args)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: nginx
+          push: true
+          tags: ghcr.io/${{ env.OWNER_LC }}/mesto-nginx:${{ github.sha }}
+          build-args: |
+            NUXT_PUBLIC_SITE_URL=${{ vars.NUXT_PUBLIC_SITE_URL || 'https://mesto.studio' }}
+            NUXT_PUBLIC_ANALYTICS_ENABLED=${{ vars.NUXT_PUBLIC_ANALYTICS_ENABLED || 'false' }}
+            NUXT_PUBLIC_GA_ID=${{ vars.NUXT_PUBLIC_GA_ID }}
+            NUXT_PUBLIC_YM_ID=${{ vars.NUXT_PUBLIC_YM_ID }}
+          cache-from: type=gha,scope=nginx
+          cache-to: type=gha,scope=nginx,mode=max
 
   deploy:
     needs: images
-    # TODO: включить, когда будут VPS и секреты SSH
-    if: ${{ false }}
+    # Включается переменной репозитория DEPLOY_ENABLED=true, когда готовы VPS и секреты SSH.
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
     runs-on: ubuntu-latest
+    env:
+      OWNER: ${{ github.repository_owner }}
+      SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
+      SSH_TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - run: echo "TODO: SSH на VPS, IMAGE_TAG=${{ github.sha }} docker compose pull && docker compose up -d"
+      - uses: actions/checkout@v4
+      - name: Настроить SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Обновить compose-файл на VPS и перезапустить
+        run: |
+          SSH="ssh -i $HOME/.ssh/deploy_key -p $SSH_PORT -o StrictHostKeyChecking=yes $SSH_TARGET"
+          scp -i "$HOME/.ssh/deploy_key" -P "$SSH_PORT" -o StrictHostKeyChecking=yes             docker-compose.yml "$SSH_TARGET:$DEPLOY_PATH/docker-compose.yml"
+          # Токен передаётся через stdin на время job: образы в GHCR могут быть приватными.
+          printf '%s' "$GHCR_TOKEN" | $SSH "docker login ghcr.io -u ${{ github.actor }} --password-stdin"
+          $SSH "cd '$DEPLOY_PATH' && export GHCR_OWNER=${OWNER,,} IMAGE_TAG=${{ github.sha }} && docker compose pull && docker compose up -d --remove-orphans"

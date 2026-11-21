@@ -1,26 +1,51 @@
-# Заготовка — docs «Инфраструктура» → «Docker и Nginx», «Деплой». Доводит агент devops.
-# На VPS: docker compose pull && docker compose up -d. Откат — предыдущий тег образа.
-# TODO: владелец образов в GHCR и способ передачи тега (sha коммита) — при настройке деплоя.
+# Инфраструктура → «Docker и Nginx», «Деплой» (Р20). На VPS: docker compose pull && docker compose up -d.
+# Откат — запуск предыдущего тега: IMAGE_TAG=<sha> docker compose up -d.
+#
+# Переменные подстановки (в файле окружения рядом с compose на VPS или в оболочке):
+#   GHCR_OWNER — владелец образов в GHCR, строчными (ghcr.io/<владелец>/mesto-app, mesto-nginx);
+#   IMAGE_TAG  — тег образов (sha коммита), по умолчанию latest.
+# Секреты приложения (TELEGRAM_*, SMTP_*, MAIL_*) — только в файле окружения на сервере, не в репозитории.
+# Публичные NUXT_PUBLIC_* на пререндер не влияют: они запекаются в образ при сборке (build args в CI).
+#
+# Первый выпуск сертификата (после запуска стека, когда DNS mesto.studio и www указывает на VPS):
+#   docker compose run --rm --entrypoint certbot certbot certonly --webroot -w /var/www/certbot \
+#     -d mesto.studio -d www.mesto.studio --email <почта владельца> --agree-tos --no-eff-email
+#   затем docker compose restart nginx (до этого nginx работает с самоподписанным сертификатом).
+name: mesto
+
 services:
   app:
-    image: ghcr.io/OWNER/mesto-app:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-owner}/mesto-app:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      target: app
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
     # Порт 3000 наружу не открывается: приложение доступно только через nginx.
     expose:
       - '3000'
 
   nginx:
-    image: ghcr.io/OWNER/mesto-nginx:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-owner}/mesto-nginx:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      target: nginx
+      args:
+        NUXT_PUBLIC_SITE_URL: ${NUXT_PUBLIC_SITE_URL:-https://mesto.studio}
+        NUXT_PUBLIC_ANALYTICS_ENABLED: ${NUXT_PUBLIC_ANALYTICS_ENABLED:-false}
+        NUXT_PUBLIC_GA_ID: ${NUXT_PUBLIC_GA_ID:-}
+        NUXT_PUBLIC_YM_ID: ${NUXT_PUBLIC_YM_ID:-}
     restart: unless-stopped
     depends_on:
       - app
     ports:
-      - '80:80'
-      - '443:443'
+      - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
     volumes:
-      - certbot-etc:/etc/letsencrypt
-      - certbot-www:/var/www/certbot
+      - certbot-etc:/etc/letsencrypt:ro
+      - certbot-www:/var/www/certbot:ro
 
   certbot:
     image: certbot/certbot
@@ -28,7 +53,8 @@ services:
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-www:/var/www/certbot
-    # TODO: выпуск и продление сертификата Let's Encrypt для mesto.studio и www.mesto.studio
+    # Продление Let's Encrypt: проверка дважды в сутки; certbot продлевает сертификат за 30 дней до конца срока.
+    entrypoint: /bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done'
 
 volumes:
   certbot-etc:
