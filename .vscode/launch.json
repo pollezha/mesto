@@ -1,0 +1,47 @@
+{
+  // Запуск фронта из VS Code (Run and Debug, F5).
+  // «Nuxt dev + Chrome» — основной: dev-сервер с HMR и отладкой сервера, браузер открывается сам.
+  // Страницы пока пустые — смотреть компоненты в песочнице /__kit (только dev и сборка с MESTO_KIT=1).
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Nuxt: dev",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}",
+      "serverReadyAction": {
+        "pattern": "Nitro server built",
+        "action": "startDebugging",
+        "name": "Chrome: /__kit"
+      }
+    },
+    {
+      "name": "Nuxt: preview (сборка с /__kit)",
+      "type": "node-terminal",
+      "request": "launch",
+      "preLaunchTask": "build (MESTO_KIT=1)",
+      "command": "npm run preview",
+      "cwd": "${workspaceFolder}",
+      "serverReadyAction": {
+        "pattern": "Listening on",
+        "action": "startDebugging",
+        "name": "Chrome: /__kit"
+      }
+    },
+    {
+      "name": "Chrome: /__kit",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000/__kit",
+      "webRoot": "${workspaceFolder}"
+    },
+    {
+      "name": "Chrome: главная",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000/",
+      "webRoot": "${workspaceFolder}"
+    }
+  ]
+}

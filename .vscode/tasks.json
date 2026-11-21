@@ -1,0 +1,33 @@
+{
+  // Terminal → Run Task. Команды — из package.json (см. CLAUDE.md → «Команды»).
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "dev",
+      "type": "npm",
+      "script": "dev",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "build (MESTO_KIT=1)",
+      "type": "npm",
+      "script": "build",
+      "options": { "env": { "MESTO_KIT": "1" } },
+      "problemMatcher": []
+    },
+    {
+      "label": "check",
+      "type": "npm",
+      "script": "check",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "test:e2e",
+      "type": "npm",
+      "script": "test:e2e",
+      "problemMatcher": []
+    }
+  ]
+}
