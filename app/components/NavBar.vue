@@ -36,28 +36,10 @@ const projectsTo = computed(() => `${homePath.value}#projects`)
 // Р6 / Р55: если на странице нет #form — переход на «Контакты» своей локали сразу к форме.
 const formTo = computed(() => `${localePath('/contacts')}#form`)
 
-function prefersReducedMotion() {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
-function scrollBehaviorValue(): ScrollBehavior {
-  return prefersReducedMotion() ? 'auto' : 'smooth'
-}
-
-function scrollToId(id: string): boolean {
-  const el = document.getElementById(id)
-  if (!el) return false
-  el.scrollIntoView({ behavior: scrollBehaviorValue(), block: 'start' })
-  return true
-}
+const { scrollToTop, scrollToId, isModifiedClick } = useScrollTo()
 
 function closeMenu() {
   open.value = false
-}
-
-// Ctrl / Cmd / Shift / Alt / не левая кнопка — не перехватываем, пусть открывается новая вкладка
-function isModifiedClick(event: MouseEvent) {
-  return event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
 }
 
 // Р6, Р68: обычный <a href> (RouterLink сработал бы раньше нашего обработчика и перебил плавный скролл).
@@ -72,8 +54,7 @@ function onAnchor(event: MouseEvent, href: string, scrollToTarget: () => boolean
 function onLogo(event: MouseEvent) {
   onAnchor(event, homePath.value, () => {
     if (!isHome.value) return false
-    window.scrollTo({ top: 0, behavior: scrollBehaviorValue() })
-    return true
+    return scrollToTop()
   })
 }
 
