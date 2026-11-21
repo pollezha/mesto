@@ -1,25 +1,37 @@
-# Инфраструктура → «Docker и Nginx», «Деплой» (Р20). На VPS: docker compose pull && docker compose up -d.
-# Откат — запуск предыдущего тега: IMAGE_TAG=<sha> docker compose up -d.
+# Инфраструктура → «Docker и Nginx», «Деплой» (Р20).
 #
-# Переменные подстановки (в файле окружения рядом с compose на VPS или в оболочке):
-#   GHCR_OWNER — владелец образов в GHCR, строчными (ghcr.io/<владелец>/mesto-app, mesto-nginx);
-#   IMAGE_TAG  — тег образов (sha коммита), по умолчанию latest.
+# Тег и владелец образов лежат в файле release.env рядом с compose (не в файле с секретами приложения):
+#   GHCR_OWNER=<владелец в GHCR, строчными>   IMAGE_TAG=<sha коммита>
+# Его пишет деплой (CI) при каждом выкате, поэтому ручные команды работают на текущем задеплоенном теге:
+#   docker compose --env-file release.env pull && docker compose --env-file release.env up -d
+# Откат на предыдущий тег (значение из оболочки перекрывает файл; чтобы закрепить откат, поправьте release.env):
+#   IMAGE_TAG=<sha> docker compose --env-file release.env up -d
+# Без --env-file compose остановится с ошибкой: тега по умолчанию нет.
 # Секреты приложения (TELEGRAM_*, SMTP_*, MAIL_*) — только в файле окружения на сервере, не в репозитории.
 # Публичные NUXT_PUBLIC_* на пререндер не влияют: они запекаются в образ при сборке (build args в CI).
 #
 # Первый выпуск сертификата (после запуска стека, когда DNS mesto.studio и www указывает на VPS):
-#   docker compose run --rm --entrypoint certbot certbot certonly --webroot -w /var/www/certbot \
-#     -d mesto.studio -d www.mesto.studio --email <почта владельца> --agree-tos --no-eff-email
-#   затем docker compose restart nginx (до этого nginx работает с самоподписанным сертификатом).
+#   docker compose --env-file release.env run --rm --entrypoint certbot certbot certonly --webroot \
+#     -w /var/www/certbot -d mesto.studio -d www.mesto.studio --email <почта владельца> --agree-tos --no-eff-email
+#   затем docker compose --env-file release.env restart nginx (до этого nginx работает с самоподписанным сертификатом).
+#
+# Логи (Н43): у каждого сервиса ротация json-file, 5 файлов по 10 МБ (до 50 МБ на сервис), чтобы логи не росли без предела.
 name: mesto
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '5'
 
 services:
   app:
-    image: ghcr.io/${GHCR_OWNER:-owner}/mesto-app:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:?задайте GHCR_OWNER в release.env}/mesto-app:${IMAGE_TAG:?задайте IMAGE_TAG в release.env}
     build:
       context: .
       target: app
     restart: unless-stopped
+    logging: *logging
     env_file:
       - path: .env
         required: false
@@ -28,7 +40,7 @@ services:
       - '3000'
 
   nginx:
-    image: ghcr.io/${GHCR_OWNER:-owner}/mesto-nginx:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:?задайте GHCR_OWNER в release.env}/mesto-nginx:${IMAGE_TAG:?задайте IMAGE_TAG в release.env}
     build:
       context: .
       target: nginx
@@ -38,6 +50,7 @@ services:
         NUXT_PUBLIC_GA_ID: ${NUXT_PUBLIC_GA_ID:-}
         NUXT_PUBLIC_YM_ID: ${NUXT_PUBLIC_YM_ID:-}
     restart: unless-stopped
+    logging: *logging
     depends_on:
       - app
     ports:
@@ -50,6 +63,7 @@ services:
   certbot:
     image: certbot/certbot
     restart: unless-stopped
+    logging: *logging
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-www:/var/www/certbot

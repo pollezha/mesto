@@ -103,4 +103,5 @@ jobs:
           scp -i "$HOME/.ssh/deploy_key" -P "$SSH_PORT" -o StrictHostKeyChecking=yes             docker-compose.yml "$SSH_TARGET:$DEPLOY_PATH/docker-compose.yml"
           # Токен передаётся через stdin на время job: образы в GHCR могут быть приватными.
           printf '%s' "$GHCR_TOKEN" | $SSH "docker login ghcr.io -u ${{ github.actor }} --password-stdin"
-          $SSH "cd '$DEPLOY_PATH' && export GHCR_OWNER=${OWNER,,} IMAGE_TAG=${{ github.sha }} && docker compose pull && docker compose up -d --remove-orphans"
+          # Тег и владелец сохраняются в release.env рядом с compose: ручные pull/up на VPS идут с текущим тегом.
+          $SSH "cd '$DEPLOY_PATH' && echo 'GHCR_OWNER=${OWNER,,}' > release.env && echo 'IMAGE_TAG=${{ github.sha }}' >> release.env && docker compose --env-file release.env pull && docker compose --env-file release.env up -d --remove-orphans"
