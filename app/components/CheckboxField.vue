@@ -160,6 +160,13 @@ const docs = {
   font-weight: var(--fw-medium);
   color: var(--color-gray-700); /* Achromatic/Gray 700 */
   overflow-wrap: break-word;
+  /* Клик по подписи переключает чекбокс (label for) */
+  cursor: pointer;
+}
+
+/* Чекбокс не нажимается (идёт отправка формы) */
+.checkbox-field:has(input:disabled) .checkbox-field__label {
+  cursor: default;
 }
 
 /* State=Error: подпись Achromatic/Black (Figma 2044:995, 2044:1006) */

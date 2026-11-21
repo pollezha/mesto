@@ -116,6 +116,12 @@ function inputAttrs() {
   height: 100%;
   margin: 0;
   opacity: 0;
+  cursor: pointer;
+}
+
+/* Не нажимается (идёт отправка формы) */
+.checkbox__input:disabled {
+  cursor: default;
 }
 
 /* Обводку фокуса рисует видимый квадрат (ниже) */

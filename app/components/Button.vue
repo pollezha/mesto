@@ -96,10 +96,16 @@ function onClick(event: MouseEvent) {
   font-weight: var(--fw-medium);
   text-align: center;
   text-decoration: none;
+  cursor: pointer;
   /* Текст в Figma — auto width (whitespace-nowrap), 1:1750 / 1:1758 */
   white-space: nowrap;
   /* «Компоненты» → Button: смена фона 300 мс ease-out */
   transition: background-color 300ms ease-out;
+}
+
+/* Идёт отправка: клики игнорируются — курсор progress (disabled у кнопки нет) */
+.button[aria-busy='true'] {
+  cursor: progress;
 }
 
 /* ---------- Цвета по состояниям («Компоненты» → Button, таблица; Figma 1:1749 / 1:1751 / 1:1753,
