@@ -9,7 +9,8 @@
 // не заголовок); Р10 (слова по кругу), Р47 (тайминги, каретка).
 // Тексты — словарь: home.tagline.template (плейсхолдер {word}) и home.tagline.words.
 // Н18 — решение оркестратора по поручению владельца 20.11.2026: читалка — фраза с последним словом; каретка мигает резко.
-// Перенос строк — по ширине блока, ТЗ п. 6 (ручных переносов нет).
+// Перенос перед «через бренд…» / «through branding…» — решение владельца 22.11.2026 по Н19 (как в Figma): часть после
+// {word} — блочный span, словари и читалка без изменений. Остальные переносы — по ширине блока.
 import type { MessageFunction, VueMessageType } from 'vue-i18n'
 
 const { t, tm, rt, locale } = useI18n()
@@ -36,7 +37,8 @@ const lastWord = computed(() => words.value[words.value.length - 1] ?? '')
 
 const parts = computed(() => {
   const [before = '', after = ''] = t('home.tagline.template', { word: MARK }).split(MARK)
-  return { before, after }
+  // Часть после слова — с новой строки (Н19, решение владельца 22.11.2026; так во всех 12 экранах Figma): без ведущего пробела
+  return { before, after: after.trimStart() }
 })
 
 // Доступный текст: полная фраза с последним словом (Н18); анимация для читалки скрыта.
@@ -128,7 +130,7 @@ onBeforeUnmount(() => {
         ><span v-for="w in words" :key="w" class="typing__ghost">{{ w }}</span
         ><span class="typing__live">{{ shown }}<span v-if="animating" class="typing__caret" /></span
       ></span>
-      <span>{{ parts.after }}</span>
+      <span class="typing__rest">{{ parts.after }}</span>
     </span>
   </p>
 </template>
@@ -153,6 +155,11 @@ onBeforeUnmount(() => {
   display: inline-grid;
   color: var(--color-blue-500);
   white-space: nowrap;
+}
+
+/* Вторая часть («через бренд…») всегда с новой строки: блочный span, не <br> */
+.typing__rest {
+  display: block;
 }
 
 .typing__ghost,
