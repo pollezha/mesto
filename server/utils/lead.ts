@@ -108,7 +108,7 @@ async function sendMail(lead: LeadInput, text: string): Promise<void> {
   const env = serverEnv()
   if (!env.smtpHost || !env.mailFrom || !env.mailTo) throw new Error('not configured')
   const secure = env.smtpSecure === 'true' || env.smtpSecure === '1'
-  // TODO(question): new Н44 — SMTP-клиент nodemailer выбран без указания в «Инфраструктуре»
+  // SMTP-клиент nodemailer — решение владельца от 23.11.2026 (Н44)
   const transport = nodemailer.createTransport({
     host: env.smtpHost,
     port: Number(env.smtpPort) || (secure ? 465 : 587),

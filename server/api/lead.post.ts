@@ -6,7 +6,7 @@ import { processLead } from '../utils/lead'
 // IP клиента — X-Real-IP от Nginx (порт приложения наружу не открыт).
 // Принимается только JSON («Принимает JSON»): иначе 415, тело не разбирается. Это же закрывает
 // cross-site отправку: JSON с другого сайта требует CORS preflight, а CORS-заголовков мы не отдаём.
-// TODO(question): new Н45 — нативный POST без JS не поддержан (вариант а); ждём ответа владельца
+// Нативный POST без JS не поддерживается — решение владельца от 23.11.2026 (Н45)
 const statusText = {
   415: 'Unsupported Media Type',
   422: 'Unprocessable Entity',
