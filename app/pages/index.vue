@@ -177,12 +177,7 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <div class="home__typing-wrap home__stop">
-        <Typing class="home__typing" />
-        <!-- Н54: две каракули справа от текста перебивки (на < 768 — одна) -->
-        <Doodle name="arrow" class="home__doodle home__doodle--typing-a" />
-        <Doodle name="loop" class="home__doodle home__doodle--typing-b" />
-      </div>
+      <Typing class="home__typing home__stop" />
 
       <section class="home__services home__stop">
         <CaptionHeading :num="$t('home.services.num')">{{
@@ -460,13 +455,6 @@ onBeforeUnmount(() => {
   .home .home__typing {
     padding: 0 var(--_hm-m-x);
   }
-
-  /* каракуля-стрелка — в промежутке над перебивкой, справа (там нет ни текста, ни индикатора карусели) */
-  .home__doodle--typing-a {
-    top: calc(var(--doodle-size) * -0.75);
-    right: var(--_hm-m-x);
-    bottom: auto;
-  }
 }
 
 @media (min-width: 768px) {
@@ -620,68 +608,6 @@ onBeforeUnmount(() => {
     .home {
       --_hm-screen-h: calc(100svh / var(--site-zoom));
     }
-  }
-}
-
-.home__typing-wrap {
-  position: relative;
-}
-
-/* ---------- Н54 — владелец 24.11.2026: небольшие каракули в пустых местах экранов (осталась только перебивка: стрелка и, на ≥ 1024, петля; каракули на hero и в «Услугах» убраны по решению владельца 24.11.2026) ----------
-   Рисунки и штрих — Doodle.vue. Размер ступенями (--doodle-size), положение — доли раздела. Не перекрывают текст,
-   карточки и гиф; без движения и событий мыши. Источника в Figma нет, нужно подтверждение дизайнера. TODO(question): new Н54 */
-.home {
-  --doodle-size: 64px; /* Н54, нет в Figma; 380 */
-}
-
-.home__doodle--typing-a,
-.home__doodle--typing-b {
-  position: absolute;
-}
-
-.home__doodle--typing-a {
-  right: 10%;
-  bottom: 18%;
-}
-
-.home__doodle--typing-b {
-  display: none; /* на < 768 в перебивке одна каракуля */
-}
-
-@media (min-width: 768px) {
-  .home {
-    --doodle-size: 80px; /* Н54, нет в Figma; 768 */
-  }
-}
-
-@media (min-width: 1024px) {
-  .home {
-    --doodle-size: 96px; /* Н54, нет в Figma; 1024 */
-  }
-
-  /* Н56: на < 1024 перебивка по содержимому — вторая каракуля попадала на текст, остаётся одна (стрелка) */
-  .home__doodle--typing-b {
-    display: block;
-    top: 22%;
-    right: 22%;
-  }
-}
-
-@media (min-width: 1280px) {
-  .home {
-    --doodle-size: 104px; /* Н54, нет в Figma; 1280 */
-  }
-}
-
-@media (min-width: 1440px) {
-  .home {
-    --doodle-size: 112px; /* Н54, нет в Figma; 1440 */
-  }
-}
-
-@media (min-width: 1920px) {
-  .home {
-    --doodle-size: 120px; /* Н54, нет в Figma; 1920 */
   }
 }
 </style>
