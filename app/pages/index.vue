@@ -128,7 +128,7 @@ onBeforeUnmount(() => {
       </div>
 
       <section id="projects" class="home__projects">
-        <CaptionHeading :num="$t('home.projects.num')">{{
+        <CaptionHeading class="home__caption-m" :num="$t('home.projects.num')">{{
           $t('home.projects.title')
         }}</CaptionHeading>
         <div class="home__carousel">
@@ -142,12 +142,27 @@ onBeforeUnmount(() => {
             @keydown="onCasesKey"
           >
             <ul class="home__track">
-              <li v-for="n in [1, 2, 3, 4] as const" :key="n" class="home__case-item">
-                <CaseCard
-                  :n="n"
-                  class="home__case"
-                  :class="[`home__case--${n}`, n > 1 ? 'home__stop' : 'home__stop-first']"
-                />
+              <li
+                v-for="n in [1, 2, 3, 4] as const"
+                :key="n"
+                class="home__case-item"
+                :class="n === 1 && 'home__stop-first'"
+              >
+                <!-- Н60: на ≥ 1024 подпись и кейс 1 — один экран (обёртка), на < 1024 обёртка не участвует в раскладке;
+                     подпись для десктопа — второй экземпляр (скрыт на < 1024), верхний — для мобильной карусели -->
+                <div class="home__first">
+                  <CaptionHeading
+                    v-if="n === 1"
+                    class="home__caption-d"
+                    :num="$t('home.projects.num')"
+                    >{{ $t('home.projects.title') }}</CaptionHeading
+                  >
+                  <CaseCard
+                    :n="n"
+                    class="home__case"
+                    :class="[`home__case--${n}`, n > 1 && 'home__stop']"
+                  />
+                </div>
               </li>
             </ul>
           </div>
@@ -377,7 +392,15 @@ onBeforeUnmount(() => {
     scroll-snap-align: start;
   }
 
-  .home__case-item > :deep(.case-card) {
+  .home__first {
+    display: contents; /* Н60: обёртка «подпись + кейс 1» — только для ≥ 1024 */
+  }
+
+  .home .home__caption-d {
+    display: none;
+  }
+
+  .home__case-item :deep(.case-card) {
     flex: 1 1 auto;
   }
 
@@ -500,9 +523,11 @@ onBeforeUnmount(() => {
   /* Раздел «Проекты» сам не остановка: он выше окна (4 кейса), и его snap area покрывает окно — браузер разрешает любую
      позицию внутри, остановки кейсов 2–4 и #projects «плавают». Остановка раздела — кейс 1 с вылетом вверх на резерв
      (поле + подпись + зазор): область начинается ровно с верха раздела. */
+  /* Н60 — владелец 24.11.2026: экран Проекты + кейс 1 по центру окна. Остановка — верх этого экрана (li кейса 1,
+     он же верх раздела: у раздела на ≥ 1024 нет верхнего поля); высота = окно, подпись и карточка вместе по центру.
+     Окно низкое — содержимое занимает весь экран: подпись у верха (поле --_hm-pad-top), карточка по Н47. TODO(question): new Н60 */
   .home__stop-first {
     scroll-snap-align: start;
-    scroll-margin-top: var(--cc-top-reserve);
   }
 
   /* лента кейсов на десктопе — колонка карточек (Н51), обёртки карусели в раскладке не участвуют */
@@ -510,6 +535,29 @@ onBeforeUnmount(() => {
   .home__track,
   .home__case-item {
     display: contents;
+  }
+
+  .home__case-item.home__stop-first {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: var(--_hm-screen-h);
+    padding-block: var(--_hm-pad-top) var(--space-48); /* верх — поле под показанный навбар; низ — как --cc-pad-y в CaseCard */
+  }
+
+  .home__first {
+    display: flex;
+    flex-direction: column;
+    gap: var(--_hm-gap);
+  }
+
+  .home .home__caption-m {
+    display: none;
+  }
+
+  .home__projects {
+    padding-top: 0; /* верх раздела = верх экрана Проекты (якорь #projects) */
   }
 
   .home__dots {
@@ -523,7 +571,7 @@ onBeforeUnmount(() => {
   }
 
   .home__services {
-    justify-content: center; /* Н51: «Услуги» — экран, содержимое по центру; раскрытый блок может сделать раздел выше окна */
+    justify-content: flex-start; /* Н51/Н59: «Услуги» — экран; от верха, чтобы раскрытие блока не двигало подпись и блоки */
     min-height: var(--_hm-screen-h);
   }
 
@@ -544,10 +592,6 @@ onBeforeUnmount(() => {
     flex-direction: column;
     justify-content: center; /* Н51: перебивка — экран, текст по центру */
     min-height: var(--_hm-screen-h);
-  }
-
-  .home__case--1 {
-    margin-bottom: var(--space-48); /* поле снизу, Н51 */
   }
 
   .home .home__hero :deep(.hero-gif) {
