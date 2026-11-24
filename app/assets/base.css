@@ -46,8 +46,11 @@
 
 /* ---------- Страница ---------- */
 html {
-  /* «Токены» → «Цвета»: Gray 100 — фон страниц; Black — основной текст */
-  background-color: var(--color-gray-100);
+  /* «Токены» → «Цвета»: Gray 100 — фон страниц (на body, ниже); Black — основной текст.
+     Н57 — владелец 24.11.2026: под футером нет серого фона. Фон html (его показывает iOS-«резинка»
+     внизу и вокруг страницы) белый, как футер; серый фон страницы — на body, а сверху его продолжает
+     fixed-полоса html::before (верхняя «резинка» остаётся серой). */
+  background-color: var(--color-white);
   color: var(--color-black);
   /* «Токены» → «Типографика»: Onest, межбуквенный интервал 0 */
   font-family: var(--font-family);
@@ -60,6 +63,19 @@ html {
 
 body {
   margin: 0;
+  display: flow-root; /* фон body охватывает всех детей, поля не схлопываются наружу */
+  background-color: var(--color-gray-100);
+}
+
+/* Н57: верхняя «резинка» и область за верхним краем остаются серыми (фон html теперь белый) */
+html::before {
+  content: '';
+  position: fixed;
+  inset: -100vh 0 auto;
+  height: 150vh;
+  z-index: -1;
+  background-color: var(--color-gray-100);
+  pointer-events: none;
 }
 
 /* Шрифт по умолчанию — и в элементах форм (браузер не наследует его сам) */

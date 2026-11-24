@@ -140,6 +140,8 @@ const documents = computed(() =>
 
   width: 100%;
   overflow: hidden;
+  /* Н57 — владелец 24.11.2026: под футером нет серого фона; нижнее поле учитывает вырез/панель iOS */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   background-color: var(--color-white); /* Achromatic/White */
   border-start-start-radius: var(--radius-64); /* 40 @380 … 64 @1920 */
   border-start-end-radius: var(--radius-64);
@@ -160,22 +162,27 @@ const documents = computed(() =>
 }
 
 .footer__layout {
+  /* Н57 — владелец 24.11.2026: на телефоне контакты и документы в два столбца (как на 768, Figma 2064:1583),
+     по верху; длинные названия документов переносятся в своей колонке */
   display: flex;
-  flex-direction: column;
-  gap: var(--_footer-section-gap);
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--space-24);
   padding: var(--_footer-py) var(--_footer-px) 0; /* < 768: низ — зазор inner (Н57) */
 }
 
 /* Колонка «Контакты»: заголовок + один (RU) или два (EN) списка */
 .footer__contacts {
+  flex: 0 1 auto;
+  min-width: 0;
   display: grid;
   grid-template-columns: auto;
   row-gap: var(--space-20); /* 8 @380 — Figma 2043:1704 @380 */
 }
 
 .footer__contacts--two {
-  grid-template-columns: auto auto;
-  justify-content: space-between; /* 380: два списка по краям — Figma 2043:1706 @380 */
+  /* Н57: в половине ширины два списка EN не помещаются — на < 768 один под другим, в одной колонке */
+  grid-template-columns: auto;
 }
 
 .footer__contacts .footer__title {
@@ -189,11 +196,14 @@ const documents = computed(() =>
 }
 
 .footer__list--second {
-  grid-column: 2;
-  grid-row: 2;
+  grid-column: 1;
+  grid-row: 3;
 }
 
 .footer__docs {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow-wrap: break-word;
   display: flex;
   flex-direction: column;
   gap: var(--space-20);
@@ -315,8 +325,7 @@ const documents = computed(() =>
 
   .footer__layout {
     padding-bottom: var(--_footer-py);
-    flex-direction: row;
-    align-items: flex-start;
+    gap: 0;
   }
 
   .footer__contacts,
@@ -334,6 +343,7 @@ const documents = computed(() =>
 
   /* EN: второй список без заголовка — с верхнего края, вровень с заголовком */
   .footer__list--second {
+    grid-column: 2;
     grid-row: 1 / span 2;
   }
 
