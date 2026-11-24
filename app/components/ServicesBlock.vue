@@ -41,14 +41,47 @@ function measureTitle() {
   const extra = Number.isFinite(lh) ? Math.max(0, Math.round(toggle.offsetHeight - lh)) : 0
   root.style.setProperty('--_extra', `${extra}px`)
 }
+// TODO(question): new Н59 — владелец 24.11.2026: раскрытый блок услуг помещается в окно на ≥ 1024.
+// Высота содержимого панели (без полей) нужна CSS, чтобы посчитать минимальную высоту раскрытого блока. Берётся
+// наибольшая среди соседних блоков и пишется в общий родитель (--_panel-content): закрытые блоки списка сжимаются
+// одинаково, а не по своему числу пунктов.
+const panelEl = ref<HTMLElement | null>(null)
+let panelObserver: ResizeObserver | undefined
+function measurePanel() {
+  const root = rootEl.value
+  const holder = root?.parentElement
+  if (!root || !holder) return
+  let max = 0
+  for (const panel of holder.querySelectorAll<HTMLElement>(
+    ':scope > .services-block > .services-block__panel',
+  )) {
+    const cs = getComputedStyle(panel)
+    max = Math.max(
+      max,
+      panel.offsetHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom),
+    )
+  }
+  if (Number.isFinite(max) && max > 0)
+    holder.style.setProperty('--_panel-content', `${Math.ceil(max)}px`)
+}
 onMounted(() => {
   measureTitle()
-  if (typeof ResizeObserver !== 'undefined' && toggleEl.value) {
-    titleObserver = new ResizeObserver(measureTitle)
-    titleObserver.observe(toggleEl.value)
+  measurePanel()
+  if (typeof ResizeObserver !== 'undefined') {
+    if (toggleEl.value) {
+      titleObserver = new ResizeObserver(measureTitle)
+      titleObserver.observe(toggleEl.value)
+    }
+    if (panelEl.value) {
+      panelObserver = new ResizeObserver(measurePanel)
+      panelObserver.observe(panelEl.value)
+    }
   }
 })
-onBeforeUnmount(() => titleObserver?.disconnect())
+onBeforeUnmount(() => {
+  titleObserver?.disconnect()
+  panelObserver?.disconnect()
+})
 
 // Пункты панели (ключи словаря home.services.blocks.<type>.items.<id>), порядок как в «Контенте»
 const ITEMS: Record<ServicesBlockType, string[]> = {
@@ -153,7 +186,7 @@ function onDiscuss() {
       </span>
     </div>
 
-    <div :id="panelId" class="services-block__panel">
+    <div :id="panelId" ref="panelEl" class="services-block__panel">
       <CaptionItem
         v-for="id in items"
         :key="id"
@@ -194,14 +227,14 @@ function onDiscuss() {
   justify-content: space-between;
   box-sizing: border-box;
   width: 100%;
-  height: calc(var(--_closed-h) + var(--_extra));
+  height: calc(var(--_closed-eff, var(--_closed-h)) + var(--_extra));
   border-radius: var(--_radius);
   overflow: hidden;
   transition: height var(--_ease);
 }
 
 .services-block--open {
-  height: calc(var(--_open-h) + var(--_extra));
+  height: calc(var(--_open-eff, var(--_open-h)) + var(--_extra));
 }
 
 /* Обводка фокуса на весь блок (ТЗ → «Общие правила» п. 8: у блоков услуг есть обводка, Р46) */
@@ -265,7 +298,7 @@ function onDiscuss() {
 
 /* ---------- Шапка ---------- */
 .services-block__head {
-  --_head-h: calc(var(--_closed-h) + var(--_extra));
+  --_head-h: calc(var(--_closed-eff, var(--_closed-h)) + var(--_extra));
 
   position: relative;
   display: flex;
@@ -281,7 +314,7 @@ function onDiscuss() {
 }
 
 .services-block--open .services-block__head {
-  --_head-h: calc(var(--_head-open-h) + var(--_extra));
+  --_head-h: calc(var(--_head-open-eff, var(--_head-open-h)) + var(--_extra));
 }
 
 .services-block__title {
@@ -347,16 +380,23 @@ function onDiscuss() {
   gap: var(--_panel-gap);
   box-sizing: border-box;
   margin-top: auto;
-  padding: var(--_panel-pad);
+  padding: var(--_panel-pad-eff, var(--_panel-pad));
   background-color: var(--color-white);
-  /* Закрытая панель недоступна ни для фокуса, ни для читалки — после анимации закрытия */
+  /* Закрытая панель недоступна ни для фокуса, ни для читалки — после анимации закрытия; содержимое проявляется
+     вместе с ростом высоты блока (Н59), а не выскакивает под шапкой */
   visibility: hidden;
-  transition: visibility 0s linear 300ms;
+  opacity: 0;
+  transition:
+    opacity var(--_ease),
+    visibility 0s linear 300ms;
 }
 
 .services-block--open .services-block__panel {
   visibility: visible;
-  transition: visibility 0s linear 0s;
+  opacity: 1;
+  transition:
+    opacity var(--_ease),
+    visibility 0s linear 0s;
 }
 
 .services-block__item {
@@ -384,6 +424,55 @@ function onDiscuss() {
     ); /* 26 / 30 / 32 / 40 — Figma 2064:1465, 2063:1507, 2063:1395, 8:411 */
     --_panel-pad: 40px; /* Figma I2064:1465;8:415 @1024, I2063:1507;8:415 @1280, I2063:1395;8:415 @1440, I8:411;8:415 @1920 */
     --_panel-gap: 16px; /* Figma I2064:1465;8:415 @1024, I2063:1507;8:415 @1280, I2063:1395;8:415 @1440, I8:411;8:415 @1920 */
+
+    /* ---- Н59 — владелец 24.11.2026: раскрытый блок вместе с подписью и тремя закрытыми помещается в окно ----
+       TODO(question): new Н59. Высота окна — --_hm-screen-h страницы (с учётом zoom, Н50); без неё (песочница) —
+       без ограничения. Поля раздела и зазор списка повторяют сжатие страницы (clamp в index.vue). Порядок сжатия:
+       1) высота раскрытого блока уменьшается от макета до минимума — отдаёт фото (фон cover, масштаб не меняется,
+          кадрируется по высоте), 2) затем шапка и поля панели — не меньше --space-24, 3) затем закрытые блоки — не ниже
+          2 × --space-24 + строка названия. Кегли не меняются. */
+    --_screen: var(--_hm-screen-h, 10000px);
+    --_sec-pad: clamp(8px, calc((var(--_screen) - 760px) * 0.5), var(--_hm-sv-pad-y, 0px));
+    --_list-gap: clamp(6px, calc((var(--_screen) - 760px) * 0.3), var(--_hm-sv-gap, 0px));
+    --_room: calc(
+      var(--_screen) - 2 * var(--_sec-pad) - var(--_hm-cap-h, 0px) - var(--_hm-gap, 0px) - 3 *
+        var(--_list-gap)
+    );
+    /* --_panel-content — высота пунктов панели, пишет measurePanel на родителя; до замера — 160px */
+    --_head-content: var(--lh-h5); /* 1024: только название; кнопка — с 1280, см. ниже */
+    --_head-min: calc(2 * var(--space-24) + var(--_head-content));
+    --_panel-pad-nom: 40px; /* как --_panel-pad */
+    --_open-min: calc(var(--_head-min) + var(--_panel-content, 160px) + 2 * var(--space-24));
+    --_open-nom-min: calc(
+      var(--_head-open-h) + var(--_panel-content, 160px) + 2 * var(--_panel-pad-nom)
+    );
+    --_closed-min: calc(2 * var(--space-24) + var(--lh-h5));
+    --_closed-eff: min(
+      var(--_closed-h),
+      max(var(--_closed-min), calc((var(--_room) - var(--_open-min)) / 3))
+    );
+    --_open-eff: clamp(
+      var(--_open-min),
+      calc(var(--_room) - 3 * var(--_closed-eff)),
+      var(--_open-h)
+    );
+    --_deficit: clamp(
+      0px,
+      calc(var(--_open-nom-min) - var(--_open-eff)),
+      calc(var(--_open-nom-min) - var(--_open-min))
+    );
+    --_head-open-eff: clamp(
+      var(--_head-min),
+      calc(var(--_head-open-h) - var(--_deficit)),
+      var(--_head-open-h)
+    );
+    --_panel-pad-eff: clamp(
+      var(--space-24),
+      calc(
+        var(--_panel-pad-nom) - (var(--_deficit) - (var(--_head-open-h) - var(--_head-min))) / 2
+      ),
+      var(--_panel-pad-nom)
+    );
   }
 
   .services-block--open .services-block__head {
@@ -405,6 +494,7 @@ function onDiscuss() {
   .services-block {
     --_closed-h: 176px; /* Figma 2063:1508 @1280 */
     --_open-h: 796px; /* Figma 2063:1507 @1280 */
+    --_head-content: 78px; /* высота Secondary: Figma I2063:1507;8:414 @1280 */
   }
 
   /* Secondary в шапке: на экранах 1440 и 1280 — 36/24, радиус 24 (Н10 снят: Р3, Р75), высота 80 / 78 */
@@ -421,6 +511,7 @@ function onDiscuss() {
   .services-block {
     --_closed-h: 132px; /* Figma 2063:1396 @1440 */
     --_open-h: 1000px; /* Figma 2063:1395 @1440 */
+    --_head-content: 80px; /* высота Secondary: Figma I2063:1395;8:414 @1440 */
   }
 }
 
@@ -428,6 +519,7 @@ function onDiscuss() {
   .services-block {
     --_closed-h: 176px; /* Figma 35:2210 / 8:443 @1920 */
     --_open-h: 1000px; /* Figma 8:411 */
+    --_head-content: 80px; /* высота Secondary на 1920 */
   }
 
   /* На 1920 — значения Button Desktop по умолчанию (токены 24 / 36 / 24) */
