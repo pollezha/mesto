@@ -30,7 +30,9 @@ useHead({
 
 <template>
   <NuxtRouteAnnouncer />
-  <NuxtPage />
+  <div class="site-page">
+    <NuxtPage />
+  </div>
   <!-- Cookie-баннер (Р22, Р40): один раз на всех страницах, fixed поверх; показ — useConsent().bannerOpen -->
   <CookieBanner />
 </template>
