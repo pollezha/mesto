@@ -115,6 +115,54 @@ textarea:focus-visible {
   border: 0 !important;
 }
 
+/* ---------- Переход между страницами ----------
+ * Н49 — решение владельца 24.11.2026: плавный переход между страницами.
+ * Только кросс-фейд, 300 мс ease-out (ТЗ → «Общие правила» п. 7). Включает experimental.viewTransition в nuxt.config.ts. */
+::view-transition-group(root) {
+  animation-duration: 300ms;
+  animation-timing-function: ease-out;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 300ms;
+  animation-timing-function: ease-out;
+}
+
+/* Навбар и cookie-баннер есть на каждой странице: свои слои, остаются на месте и не растворяются вместе со страницей.
+ * Группа без кросс-фейда: показывается только новый снимок. */
+.navbar {
+  view-transition-name: navbar;
+}
+
+.cookie-banner {
+  view-transition-name: cookie-banner;
+}
+
+::view-transition-old(navbar),
+::view-transition-old(cookie-banner) {
+  display: none;
+}
+
+::view-transition-new(navbar),
+::view-transition-new(cookie-banner) {
+  animation: none;
+}
+
+::view-transition-group(navbar),
+::view-transition-group(cookie-banner) {
+  animation-duration: 0s;
+}
+
+/* prefers-reduced-motion: Nuxt сам не запускает переход; на случай запуска снимки сменяются мгновенно */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
 /* ---------- prefers-reduced-motion (ТЗ → «Общие правила» п. 7): все движения мгновенные ---------- */
 @media (prefers-reduced-motion: reduce) {
   *,

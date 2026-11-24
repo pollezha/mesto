@@ -10,6 +10,11 @@ export default defineNuxtConfig({
 
   typescript: { strict: true },
 
+  // Н49 — решение владельца 24.11.2026: плавный переход между страницами.
+  // View Transitions API (встроенная опция Nuxt): кросс-фейд, длительность — в base.css. Без поддержки в браузере
+  // и при prefers-reduced-motion Nuxt переходит без анимации.
+  experimental: { viewTransition: true },
+
   modules: ['@nuxtjs/i18n', '@nuxt/eslint', '@nuxt/test-utils/module'],
 
   // Токены первыми, затем глобальная база (шрифт, фокус, reduced motion).
