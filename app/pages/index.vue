@@ -322,12 +322,13 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 
   /* Н65 — владелец 24.11.2026: перебивка — отдельно между «Проектами» и «Услугами», крупно и с воздухом.
      Кегль — --fs-h3 / --lh-h3 (как надпись hero), поля по сетке --_hm-m-x (16 / 24), вертикальный воздух до соседних
-     разделов = --space-200 (120): к зазору ритма добавлено недостающее. Высота не прыгает: слово резервируется в Typing.
+     разделов = --space-280 (380: 240, 768: 168) — следующая ступень токена после --space-200 (владелец 24.11.2026:
+     больше воздуха), симметрично сверху и снизу; из него вычтен зазор ритма. Высота не прыгает: слово резервируется в Typing.
      TODO(question): new Н65 */
   .home .home__typing-d {
     box-sizing: border-box;
     width: 100%;
-    padding: calc(var(--space-200) - var(--_hm-rhythm)) var(--_hm-m-x);
+    padding: calc(var(--space-280) - var(--_hm-rhythm)) var(--_hm-m-x);
     font-size: var(--fs-h3);
     line-height: var(--lh-h3);
     overflow-wrap: anywhere; /* страховка на 360: слово nowrap не вылезает за поле */
