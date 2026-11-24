@@ -90,12 +90,16 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
         </div>
       </section>
 
-      <Typing class="home__typing home__stop" />
+      <!-- Н65: на ≥ 1024 перебивка — отдельный экран; на < 1024 тот же текст стоит внутри «Услуг» (второй экземпляр ниже),
+           этот скрыт display:none — не читается скринридером, анимация в нём не стартует (IntersectionObserver). -->
+      <Typing class="home__typing home__typing-d home__stop" />
 
       <section class="home__services home__stop">
         <CaptionHeading :num="$t('home.services.num')">{{
           $t('home.services.title')
         }}</CaptionHeading>
+        <!-- TODO(question): new Н65 — владелец 24.11.2026: на телефоне перебивка — вступление к «Услугам» (< 1024) -->
+        <Typing class="home__typing home__typing-m" />
         <div class="home__services-list">
           <ServicesBlock v-for="type in serviceTypes" :key="type" :type="type" />
         </div>
@@ -318,9 +322,22 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
     padding: 0 var(--_hm-m-x);
   }
 
-  .home .home__typing {
-    width: 100%; /* во flex-колонке margin auto иначе сжимает блок по содержимому */
-    padding: 0 var(--_hm-m-x);
+  /* Н65: перебивка — вступление к «Услугам» (второй экземпляр внутри раздела); отдельного экрана на < 1024 нет.
+     Поля — у раздела, отступы подпись → текст → блоки — --_hm-gap (--space-36, Н61). TODO(question): new Н65 */
+  .home .home__typing-d {
+    display: none;
+  }
+
+  .home .home__typing-m {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home .home__typing-m {
+    display: none; /* Н65: на ≥ 1024 перебивка — отдельный экран выше */
   }
 }
 
