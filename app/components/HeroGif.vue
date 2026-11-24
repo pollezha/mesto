@@ -12,11 +12,30 @@
 
 const { t } = useI18n()
 
+// TODO(question): new Н55 — владелец 24.11.2026: подсветка кругом «топорная». Три варианта на выбор, временный ?hl=:
+// (нет) — круг как раньше · letters — буквы темнеют по близости к гифу · words — след из слов · blue — letters синим
+// (blue-words — то же для слов). Выбранное оставим, лишнее удалим. Центр подсветки — позиция гифа (та же инерция, GIF_FOLLOW).
+type Highlight = 'circle' | 'letters' | 'words'
+const mode = ref<Highlight>('circle')
+const blue = ref(false)
+const split = computed(() => mode.value !== 'circle')
+
 const textEl = ref<HTMLElement | null>(null)
 const enabled = ref(false)
 const active = ref(false)
+const reduced = ref(false)
+
+// Разбивка надписи: буквы (letters) или слова (words); пробелы — обычным текстом, переносы строк не меняются.
+const parts = computed(() => {
+  const text = t('home.hero')
+  if (mode.value === 'letters') {
+    return Array.from(text).map((s) => ({ s, w: s !== ' ' }))
+  }
+  return text.split(/( )/).map((s) => ({ s, w: s !== ' ' && s !== '' }))
+})
 
 let mql: MediaQueryList | null = null
+let rmql: MediaQueryList | null = null
 let frame = 0
 let x = 0 // цель: курсор
 let y = 0
@@ -26,16 +45,97 @@ let gy = 0
 // Н46 — решение владельца 24.11.2026: гиф догоняет курсор, pos += (цель − pos) × k
 const GIF_FOLLOW = 0.2
 const GIF_SETTLE = 0.5 // px: ближе — считаем, что догнал, rAF останавливается
+// Н55: буквы темнеют так же быстро, как движется гиф (GIF_FOLLOW), а гаснут медленнее — остаётся мягкий след
+const HL_RADIUS = 240 // px (локальные): подсветка спадает до нуля на этом расстоянии от гифа
+const HL_FADE = 0.06 // k затухания буквы за кадр
+const HL_WORD_REACH = 70 // px: слово «горит», если ближе этого расстояния от гифа
+const HL_SETTLE = 0.004
+
+// измеренные один раз центры букв / рамки слов (локальные координаты внутри textEl)
+let toks: HTMLElement[] = []
+let box: { l: number; t: number; r: number; b: number }[] = []
+let level: number[] = []
+let shown: number[] = []
+let lit: boolean[] = []
+let ro: ResizeObserver | null = null
+
+function measure() {
+  const el = textEl.value
+  if (!el || !split.value) return
+  toks = Array.from(el.querySelectorAll<HTMLElement>('.hero-gif__tok'))
+  const o = el.getBoundingClientRect()
+  const zoom = siteZoom()
+  box = toks.map((tk) => {
+    const r = tk.getBoundingClientRect()
+    return {
+      l: (r.left - o.left) / zoom,
+      t: (r.top - o.top) / zoom,
+      r: (r.right - o.left) / zoom,
+      b: (r.bottom - o.top) / zoom,
+    }
+  })
+  if (level.length !== toks.length) {
+    level = toks.map(() => 0)
+    shown = toks.map(() => -1)
+    lit = toks.map(() => false)
+  }
+}
 
 // Н50 — владелец 24.11.2026: сайт масштабируется CSS zoom на html (siteZoom(), utils/siteZoom.ts). getBoundingClientRect и clientX/Y —
 // в пикселях окна, а left/top, transform и mask внутри блока — в «локальных» (до zoom). Делим на коэффициент.
 function readPoint(e: PointerEvent) {
   const el = textEl.value
   if (!el) return
-  const box = el.getBoundingClientRect()
+  const rect = el.getBoundingClientRect()
   const zoom = siteZoom()
-  x = (e.clientX - box.left) / zoom
-  y = (e.clientY - box.top) / zoom
+  x = (e.clientX - rect.left) / zoom
+  y = (e.clientY - rect.top) / zoom
+}
+
+// возвращает true, пока подсветка ещё меняется
+function paintLetters(on: boolean): boolean {
+  let moving = false
+  for (let i = 0; i < toks.length; i++) {
+    const b = box[i]
+    if (!b) continue
+    const s = on
+      ? Math.min(
+          1,
+          Math.max(0, 1 - Math.hypot(gx - (b.l + b.r) / 2, gy - (b.t + b.b) / 2) / HL_RADIUS),
+        )
+      : 0
+    const target = s * s * (3 - 2 * s) // smoothstep: мягкий спад без видимой границы
+    let cur = level[i] ?? 0
+    if (reduced.value) cur = target
+    else cur += (target - cur) * (target > cur ? GIF_FOLLOW : HL_FADE)
+    if (Math.abs(target - cur) < HL_SETTLE) cur = target
+    else moving = true
+    level[i] = cur
+    const pct = Math.round(cur * 100)
+    if (pct !== shown[i]) {
+      shown[i] = pct
+      const tk = toks[i]
+      if (tk) {
+        tk.style.color =
+          pct === 0 ? '' : `color-mix(in srgb, var(--_hl) ${pct}%, var(--color-gray-500))`
+      }
+    }
+  }
+  return moving
+}
+
+function paintWords(on: boolean) {
+  for (let i = 0; i < toks.length; i++) {
+    const b = box[i]
+    if (!b) continue
+    const dx = Math.max(b.l - gx, 0, gx - b.r)
+    const dy = Math.max(b.t - gy, 0, gy - b.b)
+    const now = on && Math.hypot(dx, dy) < HL_WORD_REACH
+    if (now !== lit[i]) {
+      lit[i] = now
+      toks[i]?.classList.toggle('hero-gif__tok--lit', now)
+    }
+  }
 }
 
 function tick() {
@@ -44,16 +144,20 @@ function tick() {
   if (!el) return
   gx += (x - gx) * GIF_FOLLOW
   gy += (y - gy) * GIF_FOLLOW
-  const done = Math.abs(x - gx) < GIF_SETTLE && Math.abs(y - gy) < GIF_SETTLE
-  if (done) {
+  let done = Math.abs(x - gx) < GIF_SETTLE && Math.abs(y - gy) < GIF_SETTLE
+  if (done || reduced.value) {
     gx = x
     gy = y
+    done = true
   }
   el.style.setProperty('--hero-x', `${x}px`) // круг — без задержки
   el.style.setProperty('--hero-y', `${y}px`)
   el.style.setProperty('--gif-x', `${gx}px`)
   el.style.setProperty('--gif-y', `${gy}px`)
-  if (!done) frame = requestAnimationFrame(tick)
+  let moving = false
+  if (mode.value === 'letters') moving = paintLetters(active.value)
+  else if (mode.value === 'words') paintWords(active.value)
+  if (!done || moving) frame = requestAnimationFrame(tick)
 }
 
 function onEnter(e: PointerEvent) {
@@ -61,8 +165,8 @@ function onEnter(e: PointerEvent) {
   gx = x // появление сразу в точке курсора, без «прилёта»
   gy = y
   if (frame) cancelAnimationFrame(frame)
-  tick()
   active.value = true
+  tick()
 }
 
 function onMove(e: PointerEvent) {
@@ -74,6 +178,7 @@ function onLeave() {
   active.value = false
   if (frame) cancelAnimationFrame(frame)
   frame = 0
+  if (split.value) tick() // буквы плавно гаснут, слова — через CSS-transition
 }
 
 function bind(el: HTMLElement) {
@@ -90,11 +195,15 @@ function unbind(el: HTMLElement) {
 
 function sync() {
   const el = textEl.value
-  if (!el || !mql) return
-  if (mql.matches && !enabled.value) {
+  if (!el || !mql || !rmql) return
+  reduced.value = rmql.matches
+  // круг — как раньше, только без reduced motion; новые варианты работают и при нём, но без инерции (мгновенно)
+  const on = mql.matches && (!rmql.matches || split.value)
+  if (on && !enabled.value) {
     enabled.value = true
     bind(el)
-  } else if (!mql.matches && enabled.value) {
+    if (split.value) void nextTick(measure)
+  } else if (!on && enabled.value) {
     enabled.value = false
     active.value = false
     unbind(el)
@@ -102,15 +211,26 @@ function sync() {
 }
 
 onMounted(() => {
-  mql = window.matchMedia(
-    '(pointer: fine) and (min-width: 1024px) and (prefers-reduced-motion: no-preference)',
-  )
+  const q = new URLSearchParams(window.location.search).get('hl') ?? ''
+  if (q === 'letters' || q === 'blue') mode.value = 'letters'
+  else if (q === 'words' || q === 'blue-words') mode.value = 'words'
+  blue.value = q === 'blue' || q === 'blue-words'
+  mql = window.matchMedia('(pointer: fine) and (min-width: 1024px)')
+  rmql = window.matchMedia('(prefers-reduced-motion: reduce)')
   mql.addEventListener('change', sync)
+  rmql.addEventListener('change', sync)
   sync()
+  if (split.value && textEl.value) {
+    ro = new ResizeObserver(() => measure())
+    ro.observe(textEl.value)
+    void document.fonts?.ready.then(measure)
+  }
 })
 
 onBeforeUnmount(() => {
   mql?.removeEventListener('change', sync)
+  rmql?.removeEventListener('change', sync)
+  ro?.disconnect()
   if (textEl.value) unbind(textEl.value)
   if (frame) cancelAnimationFrame(frame)
 })
@@ -118,17 +238,31 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="hero-gif">
-    <div ref="textEl" class="hero-gif__text">
-      <h1 class="hero-gif__line">{{ t('home.hero') }}</h1>
+    <div ref="textEl" class="hero-gif__text" :class="{ 'hero-gif__text--blue': blue }">
+      <h1 class="hero-gif__line" :aria-label="enabled && split ? t('home.hero') : undefined">
+        <template v-if="enabled && split">
+          <template v-for="(p, i) in parts" :key="i">
+            <span v-if="p.w" class="hero-gif__tok" aria-hidden="true">{{ p.s }}</span>
+            <template v-else>{{ p.s }}</template>
+          </template>
+        </template>
+        <template v-else>{{ t('home.hero') }}</template>
+      </h1>
       <template v-if="enabled">
         <div
+          v-if="!split"
           class="hero-gif__line hero-gif__ink"
           :class="{ 'hero-gif__ink--on': active }"
           aria-hidden="true"
         >
           {{ t('home.hero') }}
         </div>
-        <span class="hero-gif__gif" :class="{ 'hero-gif__gif--on': active }" aria-hidden="true" />
+        <span
+          v-if="!reduced || !split"
+          class="hero-gif__gif"
+          :class="{ 'hero-gif__gif--on': active }"
+          aria-hidden="true"
+        />
       </template>
     </div>
   </section>
@@ -157,7 +291,9 @@ onBeforeUnmount(() => {
   --_hero-gif-h: calc(330px * var(--_hero-gif-scale));
   --_hero-gif-pad-r: calc(101px * var(--_hero-gif-scale));
   --_hero-gif-pad-b: calc(57px * var(--_hero-gif-scale));
-  --_hero-gif-offset: calc(8px / var(--site-zoom)); /* Р48 — отступ, Н46: 8 px, не масштабируется; Н50: 8 px в окне при zoom */
+  --_hero-gif-offset: calc(
+    8px / var(--site-zoom)
+  ); /* Р48 — отступ, Н46: 8 px, не масштабируется; Н50: 8 px в окне при zoom */
 
   display: flex;
   align-items: center;
@@ -171,11 +307,16 @@ onBeforeUnmount(() => {
   --hero-y: 0px;
   --gif-x: 0px;
   --gif-y: 0px;
+  --_hl: var(--color-black); /* Н55: цвет подсветки букв/слов */
 
   position: relative;
   /* Н50 — владелец 24.11.2026: надпись hero без уменьшения (ширина блока в окне = как во фрейме) */
   width: calc(var(--_hero-text-width) / var(--site-zoom));
   max-width: 100%;
+}
+
+.hero-gif__text--blue {
+  --_hl: var(--color-blue-500); /* Н55: вариант ?hl=blue */
 }
 
 .hero-gif__line {
@@ -186,6 +327,16 @@ onBeforeUnmount(() => {
   font-weight: var(--fw-medium);
   line-height: calc(var(--lh-h3) / var(--site-zoom));
   text-align: center;
+}
+
+/* Н55, words: слово загорается за 300 мс и медленно гаснет (~1,2 с) — остаётся «след» */
+.hero-gif__tok {
+  transition: color 1200ms ease-out;
+}
+
+.hero-gif__tok--lit {
+  color: var(--_hl);
+  transition-duration: 300ms;
 }
 
 /* Чёрная копия текста поверх серой: видна только внутри круга вокруг курсора */
@@ -275,7 +426,8 @@ onBeforeUnmount(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .hero-gif__ink,
-  .hero-gif__gif {
+  .hero-gif__gif,
+  .hero-gif__tok {
     transition: none;
   }
 }
