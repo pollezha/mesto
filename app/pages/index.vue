@@ -90,16 +90,14 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
         </div>
       </section>
 
-      <!-- Н65: на ≥ 1024 перебивка — отдельный экран; на < 1024 тот же текст стоит внутри «Услуг» (второй экземпляр ниже),
-           этот скрыт display:none — не читается скринридером, анимация в нём не стартует (IntersectionObserver). -->
+      <!-- Н65: перебивка между «Проектами» и «Услугами» на всех ширинах; на < 1024 — крупнее и с воздухом
+           (владелец 24.11.2026, см. стили ниже). TODO(question): new Н65 -->
       <Typing class="home__typing home__typing-d home__stop" />
 
       <section class="home__services home__stop">
         <CaptionHeading :num="$t('home.services.num')">{{
           $t('home.services.title')
         }}</CaptionHeading>
-        <!-- TODO(question): new Н65 — владелец 24.11.2026: на телефоне перебивка — вступление к «Услугам» (< 1024) -->
-        <Typing class="home__typing home__typing-m" />
         <div class="home__services-list">
           <ServicesBlock v-for="type in serviceTypes" :key="type" :type="type" />
         </div>
@@ -322,22 +320,17 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
     padding: 0 var(--_hm-m-x);
   }
 
-  /* Н65: перебивка — вступление к «Услугам» (второй экземпляр внутри раздела); отдельного экрана на < 1024 нет.
-     Поля — у раздела, отступы подпись → текст → блоки — --_hm-gap (--space-36, Н61). TODO(question): new Н65 */
+  /* Н65 — владелец 24.11.2026: перебивка — отдельно между «Проектами» и «Услугами», крупно и с воздухом.
+     Кегль — --fs-h3 / --lh-h3 (как надпись hero), поля по сетке --_hm-m-x (16 / 24), вертикальный воздух до соседних
+     разделов = --space-200 (120): к зазору ритма добавлено недостающее. Высота не прыгает: слово резервируется в Typing.
+     TODO(question): new Н65 */
   .home .home__typing-d {
-    display: none;
-  }
-
-  .home .home__typing-m {
+    box-sizing: border-box;
     width: 100%;
-    margin: 0;
-    padding: 0;
-  }
-}
-
-@media (min-width: 1024px) {
-  .home .home__typing-m {
-    display: none; /* Н65: на ≥ 1024 перебивка — отдельный экран выше */
+    padding: calc(var(--space-200) - var(--_hm-rhythm)) var(--_hm-m-x);
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+    overflow-wrap: anywhere; /* страховка на 360: слово nowrap не вылезает за поле */
   }
 }
 
