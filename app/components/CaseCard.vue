@@ -191,6 +191,8 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     --cc-feat-h: 671; /* 2064:1432 */
     --cc-feat-img-top: 127; /* 2064:1433 */
     --cc-feat-img-h: 459; /* 2064:1433, высота рамки фото (782 × 459) */
+    --cc-gap-top: 38; /* 127 − 23 − (32 + 10 + 24): низ текста → фото; 2064:1433, 2064:1434 */
+    --cc-gap-bot: 85; /* 671 − 127 − 459: фото → низ карточки; 2064:1432 */
     --cc-feat-text-x: 21; /* 2064:1434 */
     --cc-feat-text-y: 23; /* 2064:1434 */
     --cc-feat-text-w: 622; /* 2064:1434 */
@@ -236,23 +238,37 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     padding: 0;
   }
 
-  /* Н47 — владелец 24.11.2026: фото кейса 1 не сужается, кадрируется по высоте. Рамка по центру: ширина и верх как
-     во фрейме, высота — по окну (меньше фрейма, если окно низкое); картинка внутри — cover по центру (CaseImage) */
+  /* Н47 — владелец 24.11.2026: фото кейса 1 не кадрируется; при низком окне сжимаются поля, затем фото целиком.
+     Рамка всегда в пропорциях рамки фрейма (--case-image-w : --cc-feat-img-h), по центру. Поля — зазор «низ текста →
+     фото» (--cc-gap-top) и «фото → низ карточки» (--cc-gap-bot) во фрейме своей ширины; при нехватке высоты окна
+     сначала сжимаются они (пропорционально, не меньше --space-24), потом фото (не больше рамки фрейма). Окно высокое —
+     всё как во фрейме. Высота текста = h5 + gap + txt-3 (одна строка заголовка). */
+  .case-card--1 {
+    --cc-text-h: calc(var(--lh-h5) + var(--cc-text-gap) + var(--lh-txt-3));
+    --cc-tb: calc(var(--cc-feat-text-y) * var(--cc-u) + var(--cc-text-h)); /* низ блока текста */
+    --cc-g1: calc(var(--cc-gap-top) * var(--cc-u));
+    --cc-g2: calc(var(--cc-gap-bot) * var(--cc-u));
+    --cc-pf: calc(var(--cc-feat-img-h) * var(--cc-u)); /* высота рамки во фрейме */
+    --cc-a: calc(var(--cc-h) - var(--cc-tb));
+    --cc-deficit: max(calc(var(--cc-pf) + var(--cc-g1) + var(--cc-g2) - var(--cc-a)), 0px);
+    --cc-w1: calc(var(--cc-gap-top) / (var(--cc-gap-top) + var(--cc-gap-bot)));
+    --cc-g1-eff: min(var(--cc-g1), max(var(--space-24), calc(var(--cc-g1) - var(--cc-deficit) * var(--cc-w1))));
+    --cc-g2-eff: min(
+      var(--cc-g2),
+      max(var(--space-24), calc(var(--cc-g2) - var(--cc-deficit) * (1 - var(--cc-w1))))
+    );
+    --cc-ph: max(min(var(--cc-pf), calc(var(--cc-a) - var(--cc-g1-eff) - var(--cc-g2-eff))), 0px);
+  }
+
   .case-card--1 .case-card__media {
     position: absolute;
     flex: none;
     aspect-ratio: auto;
-    top: calc(var(--cc-feat-img-top) * var(--cc-u));
+    top: calc(var(--cc-tb) + var(--cc-g1-eff));
     left: 50%;
     transform: translateX(-50%);
-    width: calc(var(--case-image-w) / var(--cc-layout) * 100%);
-    height: max(
-      calc(
-        var(--cc-h) * (1 - (var(--cc-feat-h) - var(--cc-feat-img-top) - var(--cc-feat-img-h)) / var(--cc-feat-h)) -
-          var(--cc-feat-img-top) * var(--cc-u)
-      ),
-      0px
-    );
+    height: var(--cc-ph);
+    width: calc(var(--cc-ph) * var(--case-image-w) / var(--cc-feat-img-h));
   }
 
   .case-card--1 .case-card__text {
@@ -342,6 +358,8 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     --cc-feat-h: 839; /* 2063:1474 */
     --cc-feat-img-top: 159; /* 2063:1475 */
     --cc-feat-img-h: 574; /* 2063:1475, высота рамки фото */
+    --cc-gap-top: 54; /* 159 − 29 − (36 + 12 + 28); 2063:1475, 2063:1476 */
+    --cc-gap-bot: 106; /* 839 − 159 − 574; 2063:1474 */
     --cc-feat-text-x: 27; /* 2063:1476 */
     --cc-feat-text-y: 29; /* 2063:1476 */
     --cc-feat-text-w: 711; /* 2063:1476 */
@@ -373,6 +391,8 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     --cc-feat-h: 944; /* 2063:1362 */
     --cc-feat-img-top: 179; /* 2063:1363 */
     --cc-feat-img-h: 646; /* 2063:1363, высота рамки фото */
+    --cc-gap-top: 63; /* 179 − 33 − (40 + 13 + 30); 2063:1363, 2063:1364 */
+    --cc-gap-bot: 119; /* 944 − 179 − 646; 2063:1362 */
     --cc-feat-text-x: 30; /* 2063:1364 */
     --cc-feat-text-y: 33; /* 2063:1364 */
     --cc-feat-text-w: 799; /* 2063:1364 */
@@ -396,6 +416,8 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     --cc-feat-h: 1258; /* 35:2179 */
     --cc-feat-img-top: 199; /* 35:2180 */
     --cc-feat-img-h: 861; /* 35:2180, высота рамки фото */
+    --cc-gap-top: 55; /* 199 − 44 − (48 + 16 + 36); 35:2180, 35:2181 */
+    --cc-gap-bot: 198; /* 1258 − 199 − 861; 35:2179 */
     --cc-feat-text-x: 40; /* 35:2181 */
     --cc-feat-text-y: 44; /* 35:2181 */
     --cc-feat-text-w: 977; /* 35:2181 */
