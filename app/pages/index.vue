@@ -53,6 +53,8 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
           </a>
           <Languages mode="light" />
         </div>
+        <!-- Н54: каракуля в пустом углу hero (поверх неё — гиф и подсветка; из HeroGif ничего не правится) -->
+        <Doodle name="spark" class="home__doodle home__doodle--hero" />
         <HeroGif />
       </div>
 
@@ -69,11 +71,18 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
         </div>
       </section>
 
-      <Typing class="home__typing home__stop" />
+      <div class="home__typing-wrap home__stop">
+        <Typing class="home__typing" />
+        <!-- Н54: две каракули справа от текста перебивки (на < 768 — одна) -->
+        <Doodle name="arrow" class="home__doodle home__doodle--typing-a" />
+        <Doodle name="loop" class="home__doodle home__doodle--typing-b" />
+      </div>
 
       <section class="home__services home__stop">
         <CaptionHeading>{{ $t('home.services.title') }}</CaptionHeading>
         <div class="home__services-list">
+          <!-- Н54: каракуля на строке подписи «Услуги», слева от неё -->
+          <Doodle name="spiral" tone="soft" class="home__doodle home__doodle--services" />
           <ServicesBlock v-for="type in serviceTypes" :key="type" :type="type" />
         </div>
       </section>
@@ -275,6 +284,10 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
   width: 100%;
 }
 
+.home__typing-wrap {
+  position: relative;
+}
+
 .home__typing {
   display: flex;
   flex-direction: column;
@@ -328,6 +341,96 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 
   .home__case--1 {
     margin-bottom: var(--space-48);
+  }
+}
+
+/* ---------- Н54 — владелец 24.11.2026: небольшие каракули в пустых местах экранов (всего 4: hero, перебивка × 2, «Услуги») ----------
+   Рисунки и штрих — Doodle.vue. Размер ступенями (--doodle-size), положение — доли раздела. Не перекрывают текст,
+   карточки и гиф; без движения и событий мыши. Источника в Figma нет, нужно подтверждение дизайнера. TODO(question): new Н54 */
+.home {
+  --doodle-size: 64px; /* Н54, нет в Figma; 380 */
+}
+
+.home__hero .home__doodle {
+  position: absolute;
+}
+
+.home__doodle--hero {
+  right: 12%;
+  bottom: 14%;
+}
+
+.home__doodle--typing-a,
+.home__doodle--typing-b,
+.home__doodle--services {
+  position: absolute;
+}
+
+.home__doodle--typing-a {
+  right: 10%;
+  bottom: 18%;
+}
+
+.home__doodle--typing-b {
+  display: none; /* на < 768 в перебивке одна каракуля */
+}
+
+.home__services-list {
+  position: relative;
+}
+
+.home__doodle--services {
+  left: 0;
+  /* по центру строки подписи «Услуги» (подпись справа, каракуля слева) */
+  bottom: calc(100% + var(--_hm-gap) + (var(--_hm-cap-h) - var(--doodle-size)) / 2);
+}
+
+@media (min-width: 768px) {
+  .home {
+    --doodle-size: 80px; /* Н54, нет в Figma; 768 */
+  }
+
+  .home__doodle--typing-b {
+    display: block;
+    top: 22%;
+    right: 22%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home {
+    --doodle-size: 96px; /* Н54, нет в Figma; 1024 */
+  }
+
+  .home__doodle--hero {
+    right: auto;
+    bottom: 16%;
+    left: 9%;
+  }
+}
+
+/* низкое окно: в «Услугах» сверху нет места над подписью — каракуля убирается */
+@media (min-width: 1024px) and (max-height: 680px) {
+  .home__doodle--services {
+    display: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .home {
+    --doodle-size: 104px; /* Н54, нет в Figma; 1280 */
+  }
+}
+
+@media (min-width: 1440px) {
+  .home {
+    --doodle-size: 112px; /* Н54, нет в Figma; 1440 */
+  }
+}
+
+@media (min-width: 1920px) {
+  .home {
+    --doodle-size: 120px; /* Н54, нет в Figma; 1920 */
   }
 }
 </style>

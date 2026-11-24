@@ -22,6 +22,7 @@ import CaseCardDemo from './demos/CaseCardDemo.vue'
 import ServiceCardDemo from './demos/ServiceCardDemo.vue'
 import InfoCardDemo from './demos/InfoCardDemo.vue'
 import CookieBanner from '~/components/CookieBanner.vue'
+import Doodle from '~/components/Doodle.vue'
 import DocumentPageDemo from './demos/DocumentPageDemo.vue'
 
 // Реестр песочницы /__kit. component-builder добавляет запись, когда верстает компонент:
@@ -557,6 +558,18 @@ export const kit: KitEntry[] = [
       { label: 'Document', props: { kind: 'document' } },
       { label: 'Document · long title', props: { kind: 'document-long' } },
       { label: '404', props: { kind: 'not-found' } },
+    ],
+  },
+  {
+    // Н54: каракули — не из Figma (там такого элемента нет), варианты = рисунки; размер — по умолчанию 80 px.
+    name: 'Doodle',
+    figma: '—',
+    component: Doodle,
+    variants: [
+      { label: 'spark', props: { name: 'spark' } },
+      { label: 'arrow', props: { name: 'arrow' } },
+      { label: 'loop', props: { name: 'loop' } },
+      { label: 'spiral', props: { name: 'spiral', tone: 'soft' } },
     ],
   },
 ]
