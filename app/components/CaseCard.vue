@@ -104,8 +104,12 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   padding-block: var(--cc-pad-y);
 }
 
+/* Н51 — владелец 24.11.2026: подпись «Проекты» в одном экране с кейсом 1. Остановка — верх раздела, поэтому кейс 1
+   ниже на --cc-top-reserve (поле раздела + подпись + зазор; задаёт страница) и на поле снизу; без резерва — как остальные. */
 .case-card--1 {
-  height: var(--cc-avail-h);
+  --cc-avail-h-1: calc(var(--cc-screen-h) - var(--cc-pad-y) - var(--cc-top-reserve, var(--cc-pad-y)));
+
+  height: var(--cc-avail-h-1);
   gap: var(--cc-feat-gap);
   padding: var(--cc-feat-pad) var(--cc-feat-pad) var(--cc-feat-pad-bottom);
   border-radius: var(--cc-radius);
@@ -228,13 +232,13 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
 
   .case-card--1 {
     --cc-u: calc(100cqw / var(--cc-layout));
-    --cc-h: min(calc(var(--cc-feat-h) * var(--cc-u)), var(--cc-avail-h));
+    --cc-h: min(calc(var(--cc-feat-h) * var(--cc-u)), var(--cc-avail-h-1));
 
     display: block;
     container-type: inline-size;
     height: auto;
     aspect-ratio: var(--cc-layout) / var(--cc-feat-h);
-    max-height: var(--cc-avail-h);
+    max-height: var(--cc-avail-h-1);
     padding: 0;
   }
 

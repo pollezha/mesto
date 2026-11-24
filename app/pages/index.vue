@@ -56,15 +56,15 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
         <HeroGif />
       </div>
 
-      <section id="projects" class="home__projects">
+      <section id="projects" class="home__projects home__stop">
         <CaptionHeading>{{ $t('home.projects.title') }}</CaptionHeading>
         <div class="home__cases">
           <CaseCard
             v-for="n in [1, 2, 3, 4] as const"
             :key="n"
             :n="n"
-            class="home__case home__stop"
-            :class="`home__case--${n}`"
+            class="home__case"
+            :class="[`home__case--${n}`, { home__stop: n > 1 }]"
           />
         </div>
       </section>
@@ -101,6 +101,9 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
   --_hm-sv-gap: var(--space-20); /* Figma 35:2503 @380 … 35:2209 @1920 */
   --_hm-scroll-margin: 88px; /* 12 + 64 + 12: NavBar 35:2546 @380, Н17 (как у #form); Н50 — высота навбара 80 → 64 */
 
+  --_hm-pad-top: var(--_hm-scroll-margin); /* Н51; ≥ 1024 — поле раздела */
+  --_hm-cap-h: var(--lh-h3); /* высота подписи «Проекты» = её line-height (CaptionHeading: < 768 h3, ≥ 768 h5) */
+
   min-width: 0;
 }
 
@@ -132,8 +135,13 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 }
 
 .home__projects {
-  padding: var(--_hm-pad-y) var(--_hm-pad-x);
-  scroll-margin-top: var(--_hm-scroll-margin); /* ТЗ «Общие правила» п. 9, Н17 */
+  /* Н51 — владелец 24.11.2026: подпись «Проекты» в одном экране с кейсом 1. Остановка (и якорь #projects, ТЗ «Общие
+     правила» п. 9) — верх раздела, scroll-margin нет, чтобы остановки не сдвигались. На < 1024 навбар во весь экран,
+     при прокрутке вверх он показан — поле сверху = его зона (Н17), подпись не оказывается под ним.
+     Кейс 1 ниже на этот резерв (см. --cc-avail-h-1 в CaseCard). TODO(question): new Н51 */
+  --cc-top-reserve: calc(var(--_hm-pad-top) + var(--_hm-cap-h) + var(--_hm-gap));
+
+  padding: var(--_hm-pad-top) var(--_hm-pad-x) var(--_hm-pad-y);
 }
 
 .home__services {
@@ -159,12 +167,14 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
     --_hm-cases-gap: var(--space-48); /* 29 — Figma 2064:1543 @768 */
     --_hm-sv-pad-y: var(--space-60); /* 36 — Figma 2064:1573 @768 */
     --_hm-scroll-margin: 96px; /* 16 + 64 + 16: NavBar 2064:1584 @768, Н17 */
+    --_hm-cap-h: var(--lh-h5);
   }
 }
 
 @media (min-width: 1024px) {
   .home {
     --_hm-scroll-margin: 94px; /* 13 + 68 + 13: NavBar 2064:1472 @1024, Н17 */
+    --_hm-pad-top: var(--_hm-pad-y); /* Н51: на ≥ 1024 навбар — плашка по центру, подпись справа не под ним */
     --_hm-menu-height: 93px; /* Figma 2064:1424 @1024: фиксированная, содержимое по центру */
     --_hm-logo-w: 151.191px; /* Figma 2064:1425 @1024 (RU) */
     --_hm-logo-w-en: 152.6px; /* Figma 2066:1740 @1024 (EN) */
@@ -272,14 +282,13 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
   min-height: var(--_hm-screen-h);
 }
 
-/* кейс 1: остановка с отступом сверху как зазор между карточками (см. --cc-avail-h в CaseCard) */
+/* кейс 1: остановка — верх раздела «Проекты» (подпись + кейс 1 в одном экране, см. --cc-avail-h-1 в CaseCard) */
 .home__cases {
   gap: 0; /* кейсы — экраны со своими вертикальными полями (CaseCard) */
 }
 
 .home__case--1 {
-  margin-bottom: var(--space-24); /* как поле кейса 1 сверху и снизу, Н51 */
-  scroll-margin-top: var(--space-24);
+  margin-bottom: var(--space-24); /* поле снизу, как у остальных кейсов, Н51 */
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -319,7 +328,6 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 
   .home__case--1 {
     margin-bottom: var(--space-48);
-    scroll-margin-top: var(--space-48);
   }
 }
 </style>
