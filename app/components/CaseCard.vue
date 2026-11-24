@@ -75,7 +75,14 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   --cc-feat-pad-bottom: var(--space-28); /* Figma 35:2475 @380: 303 − (247 + 40) = 16; Н24 */
   --cc-feat-gap: 40px; /* Figma 35:2475 @380: фото (низ 207) → заголовок (247); Н24 */
 
+  /* Н51 — владелец 24.11.2026: каждый кейс — экран окна на всех ширинах. Поле кейса сверху и снизу = Spacing/24
+     (как отступ раздела на 380); на ≥ 1024 — свои значения ниже. TODO(question): new Н51 */
+  --cc-pad-y: var(--space-24);
+  --cc-screen-h: 100vh;
+  --cc-avail-h: calc(100vh - 2 * var(--cc-pad-y));
+
   position: relative;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: var(--cc-stack-gap);
@@ -84,12 +91,32 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   text-decoration: none;
 }
 
+@supports (height: 100svh) {
+  .case-card {
+    --cc-screen-h: 100svh;
+    --cc-avail-h: calc(100svh - 2 * var(--cc-pad-y));
+  }
+}
+
+/* < 1024: карточка занимает экран, фото забирает всё свободное место (растёт или уменьшается), текст и год — как есть */
+.case-card:not(.case-card--1) {
+  min-height: var(--cc-screen-h);
+  padding-block: var(--cc-pad-y);
+}
+
 .case-card--1 {
+  height: var(--cc-avail-h);
   gap: var(--cc-feat-gap);
   padding: var(--cc-feat-pad) var(--cc-feat-pad) var(--cc-feat-pad-bottom);
   border-radius: var(--cc-radius);
   background: var(--color-black);
   color: var(--color-extra-white);
+}
+
+.case-card .case-card__media {
+  flex: 1 1 0;
+  min-height: 0;
+  aspect-ratio: auto;
 }
 
 .case-card__text {
@@ -126,7 +153,7 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
 /* 380: тег поверх фото в правом верхнем углу (отступ 16), заголовок под фото */
 .case-card .case-card__tag--small {
   position: absolute;
-  top: var(--cc-tag-inset);
+  top: calc(var(--cc-pad-y) + var(--cc-tag-inset));
   right: var(--cc-tag-inset);
 }
 
@@ -169,6 +196,10 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     --cc-feat-text-w: 622; /* 2064:1434 */
     --cc-text-w-2: 385; /* 2064:1439; EN 2066:1757 — то же */
     --cc-text-w-3: 381; /* 2064:1445 */
+    /* высота рамки фото, Figma 2064:1438 / 2064:1449 / 2064:1456 @1024 (как --case-image-ratio в CaseImage) */
+    --cc-img-h-2: 314.667;
+    --cc-img-h-3: 362;
+    --cc-img-h-4: 402;
     --cc-media-gap: var(--space-32); /* фото ↔ текст: 21 / 24 / 26 / 32 */
   }
 
@@ -180,27 +211,36 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   /* Н47 — владелец 24.11.2026: кейс 1 по высоте окна — уменьшается только фото, ширина и текст как во фрейме
      Высота карточки = min(пропорциональная, окно − зазор сверху и снизу (как между карточками, --space-48)).
      --cc-u — одна единица фрейма в px (доля ширины карточки), --cc-h — итоговая высота карточки. */
-  .case-card--1 {
+  .case-card {
+    --cc-pad-y: var(--space-48);
+    --cc-screen-h: calc(100vh / var(--site-zoom)); /* Н51, Н50 */
     --cc-avail-h: calc(100vh / var(--site-zoom) - 2 * var(--space-48));
+  }
+
+  @supports (height: 100svh) {
+    .case-card {
+      --cc-screen-h: calc(100svh / var(--site-zoom));
+      --cc-avail-h: calc(100svh / var(--site-zoom) - 2 * var(--space-48));
+    }
+  }
+
+  .case-card--1 {
     --cc-u: calc(100cqw / var(--cc-layout));
     --cc-h: min(calc(var(--cc-feat-h) * var(--cc-u)), var(--cc-avail-h));
 
     display: block;
     container-type: inline-size;
+    height: auto;
     aspect-ratio: var(--cc-layout) / var(--cc-feat-h);
     max-height: var(--cc-avail-h);
     padding: 0;
   }
 
-  @supports (height: 100svh) {
-    .case-card--1 {
-      --cc-avail-h: calc(100svh / var(--site-zoom) - 2 * var(--space-48));
-    }
-  }
-
   /* фото по центру; верх — как во фрейме, низ пропорционален высоте; рамка не обрезается и не растягивается */
   .case-card--1 .case-card__media {
     position: absolute;
+    flex: none;
+    aspect-ratio: var(--case-image-ratio);
     top: calc(var(--cc-feat-img-top) * var(--cc-u));
     left: 50%;
     transform: translateX(-50%);
@@ -221,10 +261,40 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     width: calc(var(--cc-feat-text-w) / var(--cc-layout) * 100%);
   }
 
-  /* фото — рамка своей ширины фрейма как доля ряда (число --case-image-w, пропорции и радиус — в CaseImage) */
+  /* Н51 — владелец 24.11.2026: каждый кейс 2–4 — экран окна. Карточка = высота окна, ряд по центру по вертикали;
+     уменьшается только фото (как у кейса 1): высота = min(высота рамки фрейма как доля ряда, окно − 2 × --space-48),
+     ширина — по пропорции рамки (CaseImage). Если окно высокое — фото как во фрейме, вокруг больше воздуха.
+     --cc-img-h — высота рамки фото своей ширины фрейма (число, без единиц), задаётся ниже по ширинам. */
+  .case-card:not(.case-card--1) {
+    --cc-u: calc(100cqw / var(--cc-layout));
+    --cc-photo-h: min(calc(var(--cc-img-h) * var(--cc-u)), var(--cc-avail-h));
+    /* то же в процентах ширины ряда: для padding самой карточки (cqw на самом контейнере не работает) */
+    --cc-photo-h-pct: min(calc(var(--cc-img-h) / var(--cc-layout) * 100%), var(--cc-avail-h));
+
+    container-type: inline-size;
+    min-height: 0;
+    padding-block: calc((var(--cc-screen-h) - var(--cc-photo-h-pct)) / 2);
+  }
+
+  .case-card--2 {
+    --cc-img-h: var(--cc-img-h-2);
+  }
+
+  .case-card--3 {
+    --cc-img-h: var(--cc-img-h-3);
+  }
+
+  .case-card--4 {
+    --cc-img-h: var(--cc-img-h-4);
+  }
+
+  /* фото — рамка своей ширины фрейма как доля ряда (число --case-image-w, пропорции и радиус — в CaseImage);
+     при нехватке высоты окна ширина берётся из высоты по пропорции рамки (width: auto) */
   .case-card:not(.case-card--1) .case-card__media {
     flex: none;
-    width: calc(var(--case-image-w) / var(--cc-layout) * 100%);
+    aspect-ratio: var(--case-image-ratio);
+    width: auto;
+    height: var(--cc-photo-h);
   }
 
   .case-card .case-card__tag--small {
@@ -276,6 +346,10 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     --cc-feat-text-w: 711; /* 2063:1476 */
     --cc-text-w-2: 543; /* 2063:1481 */
     --cc-text-w-3: 476; /* 2063:1487 */
+    /* высота рамки фото, Figma 2063:1480 / 2063:1492 / 2063:1494 @1280 */
+    --cc-img-h-2: 393.333;
+    --cc-img-h-3: 452;
+    --cc-img-h-4: 503;
   }
 
   .case-card--en {
@@ -303,6 +377,10 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     --cc-feat-text-w: 799; /* 2063:1364 */
     --cc-text-w-2: 627; /* 2063:1369 */
     --cc-text-w-3: 536; /* 2063:1375 */
+    /* высота рамки фото, Figma 2063:1368 / 2063:1380 / 2063:1382 @1440 */
+    --cc-img-h-2: 442.5;
+    --cc-img-h-3: 509;
+    --cc-img-h-4: 566;
   }
 
   .case-card--en {
@@ -322,6 +400,10 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     --cc-feat-text-w: 977; /* 35:2181 */
     --cc-text-w-2: 721; /* 35:2186 */
     --cc-text-w-3: 714; /* 35:2190 */
+    /* высота рамки фото, Figma 35:2185 / 35:2195 / 35:2197 @1920 */
+    --cc-img-h-2: 590;
+    --cc-img-h-3: 678;
+    --cc-img-h-4: 754;
   }
 
   .case-card--en {

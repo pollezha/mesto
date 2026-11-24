@@ -18,6 +18,10 @@ usePageSeo({
   alternates: true,
 })
 
+// Н51 — решение владельца 24.11.2026: каждый раздел главной — один экран на всех ширинах (scroll snap по вертикали).
+// Класс на html снимается при уходе с главной (useHead живёт, пока жива страница). TODO(question): new Н51
+useHead({ htmlAttrs: { class: 'is-snap-home' } })
+
 const homePath = computed(() => localePath('/'))
 const isEn = computed(() => locale.value === 'en')
 
@@ -37,7 +41,7 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
     <NavBar />
     <main>
       <!-- Header: hero и полоса Menu поверх (≥ 1024, Р23) -->
-      <div class="home__hero">
+      <div class="home__hero home__stop">
         <div class="home__menu">
           <a
             :href="homePath"
@@ -55,21 +59,27 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
       <section id="projects" class="home__projects">
         <CaptionHeading>{{ $t('home.projects.title') }}</CaptionHeading>
         <div class="home__cases">
-          <CaseCard v-for="n in [1, 2, 3, 4] as const" :key="n" :n="n" />
+          <CaseCard
+            v-for="n in [1, 2, 3, 4] as const"
+            :key="n"
+            :n="n"
+            class="home__case home__stop"
+            :class="`home__case--${n}`"
+          />
         </div>
       </section>
 
-      <Typing />
+      <Typing class="home__typing home__stop" />
 
-      <section class="home__services">
+      <section class="home__services home__stop">
         <CaptionHeading>{{ $t('home.services.title') }}</CaptionHeading>
         <div class="home__services-list">
           <ServicesBlock v-for="type in serviceTypes" :key="type" :type="type" />
         </div>
       </section>
     </main>
-    <ContactsCta overlap />
-    <Footer />
+    <ContactsCta overlap class="home__cta home__stop" />
+    <Footer class="home__footer" />
   </div>
 </template>
 
@@ -210,5 +220,113 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
     --_hm-logo-w: 215.987px; /* Figma 35:2172 @1920 (RU) */
     --_hm-logo-w-en: 218px; /* Figma 51:13658 @1920 (EN) */
   }
+}
+/* ---------- Н51 — владелец 24.11.2026: каждый раздел главной — один экран, на всех ширинах ----------
+   Остановки scroll snap — разделы (.home__stop); высота экрана = высота окна, с учётом zoom на ≥ 1024 (Н50).
+   Раздел выше окна (раскрытый блок услуг, CTA в низком окне) не запирает прокрутку: snap area больше окна — внутри
+   прокручивается свободно. Футер — остановка по низу страницы. TODO(question): new Н51 */
+.home {
+  --_hm-screen-h: 100vh; /* Н51: экран = окно */
+}
+
+@supports (height: 100svh) {
+  .home {
+    --_hm-screen-h: 100svh;
+  }
+}
+
+.home__stop {
+  scroll-snap-align: start;
+}
+
+.home__footer {
+  scroll-snap-align: end;
+}
+
+/* hero: на < 1024 высота по окну (на ≥ 1024 уже по окну и не ниже содержимого, Н47) */
+.home .home__hero :deep(.hero-gif) {
+  min-height: var(--_hm-screen-h);
+}
+
+.home__services {
+  justify-content: center; /* Н51: «Услуги» — экран, содержимое по центру; раскрытый блок может сделать раздел выше окна */
+  min-height: var(--_hm-screen-h);
+}
+
+/* форма — экран: футер перекрывает низ CTA на --space-overlap, поэтому высота CTA = экран + перекрытие */
+.home__cta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: calc(var(--_hm-screen-h) - var(--space-overlap));
+}
+
+.home__cta :deep(.contacts-cta__inner) {
+  width: 100%;
+}
+
+.home__typing {
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Н51: перебивка — экран, текст по центру */
+  min-height: var(--_hm-screen-h);
+}
+
+/* кейс 1: остановка с отступом сверху как зазор между карточками (см. --cc-avail-h в CaseCard) */
+.home__cases {
+  gap: 0; /* кейсы — экраны со своими вертикальными полями (CaseCard) */
+}
+
+.home__case--1 {
+  margin-bottom: var(--space-24); /* как поле кейса 1 сверху и снизу, Н51 */
+  scroll-margin-top: var(--space-24);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.is-snap-home {
+    scroll-behavior: auto; /* snap остаётся, плавности нет */
+  }
+}
+
+@media (min-width: 1024px) {
+  .home .home__hero :deep(.hero-gif) {
+    min-height: min-content;
+  }
+
+  /* Раздел не помещается в низкое окно — поля и промежутки внутри раздела сжимаются от высоты окна (не кегли и не поля формы):
+     значение фрейма, если окно высокое, до 8 / 6 / 12 px в самом низком. Н51 */
+  .home__services {
+    padding-block: clamp(8px, calc((var(--_hm-screen-h) - 760px) * 0.5), var(--_hm-sv-pad-y));
+  }
+
+  .home__services-list {
+    gap: clamp(6px, calc((var(--_hm-screen-h) - 760px) * 0.3), var(--_hm-sv-gap));
+  }
+
+  .home .home__cta {
+    --_cta-pad-top: clamp(12px, calc((var(--_hm-screen-h) - 700px) * 0.3), var(--space-80));
+  }
+
+  .home {
+    --_hm-screen-h: calc(100vh / var(--site-zoom)); /* Н50 */
+  }
+
+  @supports (height: 100svh) {
+    .home {
+      --_hm-screen-h: calc(100svh / var(--site-zoom));
+    }
+  }
+
+  .home__case--1 {
+    margin-bottom: var(--space-48);
+    scroll-margin-top: var(--space-48);
+  }
+}
+</style>
+
+<style>
+/* Н51: scroll snap — на корне прокрутки главной (класс ставит страница, useHead); на других страницах класса нет */
+html.is-snap-home {
+  scroll-snap-type: y mandatory;
 }
 </style>
