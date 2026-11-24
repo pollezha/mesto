@@ -53,6 +53,9 @@ html {
   font-family: var(--font-family);
   font-weight: var(--fw-regular);
   letter-spacing: 0;
+  /* Н50 — владелец 24.11.2026: равномерный масштаб сайта на ≥ 1024 (--site-zoom в tokens.css; на < 1024 — 1).
+     Медиазапросы остаются по реальной ширине окна. vh/svh и измерения в JS — с учётом zoom (HeroGif, NavBar). */
+  zoom: var(--site-zoom);
 }
 
 body {

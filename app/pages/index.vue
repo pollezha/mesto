@@ -89,7 +89,7 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
     --space-20
   ); /* 8 / 12 / 13 / 15 / 16 / 20 — Figma 35:2500 @380 … 35:2206 @1920 */
   --_hm-sv-gap: var(--space-20); /* Figma 35:2503 @380 … 35:2209 @1920 */
-  --_hm-scroll-margin: 104px; /* 12 + 80 + 12: NavBar 35:2546 @380, Н17 (как у #form) */
+  --_hm-scroll-margin: 88px; /* 12 + 64 + 12: NavBar 35:2546 @380, Н17 (как у #form); Н50 — высота навбара 80 → 64 */
 
   min-width: 0;
 }

@@ -146,7 +146,8 @@ let frame = 0
 
 function zoneHeight(): number {
   if (!root.value) return 0
-  return (Number.parseFloat(getComputedStyle(root.value).top) || 0) + root.value.offsetHeight
+  // Н50: top и offsetHeight — локальные (до zoom), scrollY — в пикселях окна
+  return ((Number.parseFloat(getComputedStyle(root.value).top) || 0) + root.value.offsetHeight) * siteZoom()
 }
 
 function update() {
@@ -289,30 +290,33 @@ onBeforeUnmount(() => {
   /* ---- Mobile, 380 (Figma 35:2546 @380; Mobile-op 38:10183) ---- */
   --_nav-top: 12px; /* Figma 35:2546 @380: y = 12 */
   --_nav-side: 12px; /* Figma 35:2546 @380: x = 12, ширина 356 */
-  --_nav-bar-pad-y: 20px; /* Figma 35:2546 @380 */
-  --_nav-bar-pad-x: 28px; /* Figma 35:2546 @380 */
-  --_nav-bar-radius: 40px; /* Figma 35:2546 @380 (Radius/40 на 380 = 20, не привязан) */
-  --_nav-logo-width: 132px; /* Figma I35:2546;35:5026 @380 (132 × 30.532), I2064:1584;35:5026 @768 (132) */
-  --_nav-burger-size: 40px; /* Figma I35:2546;35:5035 @380 */
+  /* Н50 — владелец 24.11.2026: мобильный навбар на < 768 меньше макета ×0.8 (высота капсулы 80 → 64),
+     вместе с открытым меню. Значения ниже — «Figma-значение × --_nav-k»; на 768 коэффициент 1 (макет). */
+  --_nav-k: 0.8;
+  --_nav-bar-pad-y: calc(20px * var(--_nav-k)); /* Figma 35:2546 @380: 20; Н50 */
+  --_nav-bar-pad-x: calc(28px * var(--_nav-k)); /* Figma 35:2546 @380: 28; Н50 */
+  --_nav-bar-radius: calc(40px * var(--_nav-k)); /* Figma 35:2546 @380: 40 (Radius/40 на 380 = 20, не привязан); Н50 */
+  --_nav-logo-width: calc(132px * var(--_nav-k)); /* Figma I35:2546;35:5026 @380: 132 × 30.532, I2064:1584;35:5026 @768: 132; Н50 */
+  --_nav-burger-size: calc(40px * var(--_nav-k)); /* Figma I35:2546;35:5035 @380: 40; Н50 */
 
   /* Mobile-op: панель (Figma 38:9976 @380, I2162:332;38:9976 @768 — на обеих ширинах одинаково, Р53) */
-  --_nav-panel-gap: 16px; /* между капсулой и панелью, Figma 38:10183 */
-  --_nav-panel-pad-y: 32px; /* Figma 38:9976 */
-  --_nav-panel-pad-x: 28px; /* Figma 38:9976 */
-  --_nav-panel-radius: 40px; /* Figma 38:9976 */
-  --_nav-op-gap: 32px; /* между пунктами и кнопкой, Figma 38:9977 */
-  --_nav-op-fs: var(--fs-txt-2); /* 24 на 380 = токен Text 2, Figma I38:9978;1:1717 */
-  --_nav-op-lh: var(--lh-txt-2); /* 32 на 380 */
-  --_nav-op-cta-height: 72px; /* Figma 38:9981 */
-  --_nav-op-cta-pad-y: 16px; /* Figma 38:9981 */
-  --_nav-op-cta-pad-x: 24px; /* Figma 38:9981 */
-  --_nav-op-cta-radius: 24px; /* Figma 38:9981 */
-  --_nav-op-cta-gap: 14px; /* Figma 38:9981 */
+  --_nav-panel-gap: calc(16px * var(--_nav-k)); /* между капсулой и панелью, Figma 38:10183: 16; Н50 */
+  --_nav-panel-pad-y: calc(32px * var(--_nav-k)); /* Figma 38:9976: 32; Н50 */
+  --_nav-panel-pad-x: calc(28px * var(--_nav-k)); /* Figma 38:9976: 28; Н50 */
+  --_nav-panel-radius: calc(40px * var(--_nav-k)); /* Figma 38:9976: 40; Н50 */
+  --_nav-op-gap: calc(32px * var(--_nav-k)); /* между пунктами и кнопкой, Figma 38:9977: 32; Н50 */
+  --_nav-op-fs: calc(24px * var(--_nav-k)); /* Figma I38:9978;1:1717 @380: 24 (= Text 2); Н50 */
+  --_nav-op-lh: calc(32px * var(--_nav-k)); /* Figma I38:9978;1:1717 @380: 32; Н50 */
+  --_nav-op-cta-height: calc(72px * var(--_nav-k)); /* Figma 38:9981: 72; Н50 */
+  --_nav-op-cta-pad-y: calc(16px * var(--_nav-k)); /* Figma 38:9981: 16; Н50 */
+  --_nav-op-cta-pad-x: calc(24px * var(--_nav-k)); /* Figma 38:9981: 24; Н50 */
+  --_nav-op-cta-radius: calc(24px * var(--_nav-k)); /* Figma 38:9981: 24; Н50 */
+  --_nav-op-cta-gap: calc(14px * var(--_nav-k)); /* Figma 38:9981: 14; Н50 */
   /* Н15 — решение владельца 20.11.2026: кегль уменьшен до 23, чтобы текст влез в одну строку
      (замер: наибольший целый кегль, при котором «Обсудить проект ↗» / «Discuss a project ↗» в одну строку
      в кнопке во всю ширину панели на 380 и 360, RU и EN: 380 — 25/26, 360 — 23/24). Межстрочный = кегль, иконка = 1em. */
-  --_nav-op-cta-fs: 23px;
-  --_nav-op-cta-lh: 23px;
+  --_nav-op-cta-fs: calc(23px * var(--_nav-k)); /* Н50: 23 × 0.8 */
+  --_nav-op-cta-lh: calc(23px * var(--_nav-k));
   /* Вынос тени вниз = смещение + размытие из --shadow-glass (0 7px 37px, tokens.css, «Токены» → «Эффекты»); Н48 */
   --_nav-shadow-reach: calc(7px + 37px);
   --_nav-z: 100; /* слой поверх контента (ТЗ → «Общие правила» п. 2), не из Figma */
@@ -488,6 +492,7 @@ onBeforeUnmount(() => {
 /* ---------- 768: капсула 736×64 (Figma 2064:1584 @768) ---------- */
 @media (min-width: 768px) {
   .navbar {
+    --_nav-k: 1; /* Н50: на 768 навбар как в макете */
     --_nav-top: 16px; /* Figma 2064:1584 @768 */
     --_nav-side: 16px; /* Figma 2064:1584 @768, ширина 736 */
     --_nav-bar-pad-y: 12px; /* Figma 2064:1584 @768 */

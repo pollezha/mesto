@@ -61,7 +61,7 @@ usePageSeo({
   --_cp-form-side: var(--space-24); /* 12 — Figma 35:5079 @380: px-[12px]; у ≥ 768 — --space-20 */
   --_cp-form-pad-y: 0px; /* Figma 35:5079 @380: вертикального паддинга нет; у ≥ 768 — --space-20 */
   --_cp-sec-bottom: 60px; /* Figma 35:4918 @380: pb-[60px]; у ≥ 768 — --space-60 */
-  --_cp-scroll-margin: 104px; /* 12 + 80 + 12: NavBar 35:2546 @380, Н17 */
+  --_cp-scroll-margin: 88px; /* 12 + 64 + 12: NavBar 35:2546 @380, Н17; Н50 — высота навбара 80 → 64 */
 
   min-width: 0;
 }

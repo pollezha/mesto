@@ -83,8 +83,8 @@ const { locale } = useI18n()
   --_cta-line: 3.424px; /* Figma 8:621 (линия под почтой, на всех ширинах) */
   --_cta-form-max: 806px; /* Figma 2073:156 (max-width формы, Desktop) */
   --_cta-lead-min: 460px; /* Figma 8:766 (min-width текстовой колонки, Desktop) */
-  /* scroll-margin якоря: высота навбара + его отступ сверху + такой же снизу (NavBar 35:2546 @380: 80, top 12) */
-  --_cta-scroll-margin: 104px; /* 12 + 80 + 12, Н17 */
+  /* scroll-margin якоря: высота навбара + его отступ сверху + такой же снизу (NavBar 35:2546 @380: 80 → 64 по Н50, top 12) */
+  --_cta-scroll-margin: 88px; /* 12 + 64 + 12, Н17; Н50 — высота навбара 80 → 64 */
 
   box-sizing: border-box;
   width: 100%;

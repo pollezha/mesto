@@ -27,11 +27,15 @@ let gy = 0
 const GIF_FOLLOW = 0.2
 const GIF_SETTLE = 0.5 // px: ближе — считаем, что догнал, rAF останавливается
 
+// Н50 — владелец 24.11.2026: сайт масштабируется CSS zoom на html (siteZoom(), utils/siteZoom.ts). getBoundingClientRect и clientX/Y —
+// в пикселях окна, а left/top, transform и mask внутри блока — в «локальных» (до zoom). Делим на коэффициент.
 function readPoint(e: PointerEvent) {
-  const box = textEl.value?.getBoundingClientRect()
-  if (!box) return
-  x = e.clientX - box.left
-  y = e.clientY - box.top
+  const el = textEl.value
+  if (!el) return
+  const box = el.getBoundingClientRect()
+  const zoom = siteZoom()
+  x = (e.clientX - box.left) / zoom
+  y = (e.clientY - box.top) / zoom
 }
 
 function tick() {
@@ -153,7 +157,7 @@ onBeforeUnmount(() => {
   --_hero-gif-h: calc(330px * var(--_hero-gif-scale));
   --_hero-gif-pad-r: calc(101px * var(--_hero-gif-scale));
   --_hero-gif-pad-b: calc(57px * var(--_hero-gif-scale));
-  --_hero-gif-offset: 8px; /* Р48 — отступ, Н46: 8 px, не масштабируется */
+  --_hero-gif-offset: calc(8px / var(--site-zoom)); /* Р48 — отступ, Н46: 8 px, не масштабируется; Н50: 8 px в окне при zoom */
 
   display: flex;
   align-items: center;
@@ -240,8 +244,9 @@ onBeforeUnmount(() => {
 @media (min-width: 1024px) {
   .hero-gif {
     /* Н47 — решение владельца 24.11.2026: ≥ 1024 hero по высоте окна, но не ниже содержимого */
-    height: 100vh;
-    height: 100svh;
+    /* Н50: под zoom на html единицы vh/svh уменьшаются вместе с блоком — делим на --site-zoom, hero = ровно окно */
+    height: calc(100vh / var(--site-zoom));
+    height: calc(100svh / var(--site-zoom));
     min-height: min-content;
     /* высота hero ≥ 1024 — по окну (Н47); высоты фреймов 768/800/900/1080: 2064:1423, 2063:1465, 2063:1353, 35:2170 */
     --_hero-text-width: 790px; /* Figma 2064:1427 @1024 */
