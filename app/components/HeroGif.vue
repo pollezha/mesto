@@ -316,6 +316,14 @@ onBeforeUnmount(() => {
   opacity: 1;
 }
 
+/* Н61 — владелец 24.11.2026: на < 1024 нет подсветки курсором, поэтому надпись сразу чёрная (было Gray 500, блёкло).
+   Откат — убрать правило. TODO(question): new Н61 */
+@media (max-width: 1023px) {
+  .hero-gif__line {
+    color: var(--color-black);
+  }
+}
+
 @media (min-width: 768px) {
   .hero-gif {
     --_hero-height: 720px; /* Figma 2064:1535 @768 */

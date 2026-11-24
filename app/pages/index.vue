@@ -128,7 +128,9 @@ onBeforeUnmount(() => {
       </div>
 
       <section id="projects" class="home__projects">
-        <CaptionHeading>{{ $t('home.projects.title') }}</CaptionHeading>
+        <CaptionHeading :num="$t('home.projects.num')">{{
+          $t('home.projects.title')
+        }}</CaptionHeading>
         <div class="home__carousel">
           <div
             ref="scroller"
@@ -168,7 +170,9 @@ onBeforeUnmount(() => {
       </div>
 
       <section class="home__services home__stop">
-        <CaptionHeading>{{ $t('home.services.title') }}</CaptionHeading>
+        <CaptionHeading :num="$t('home.services.num')">{{
+          $t('home.services.title')
+        }}</CaptionHeading>
         <div class="home__services-list">
           <ServicesBlock v-for="type in serviceTypes" :key="type" :type="type" />
         </div>
@@ -393,6 +397,58 @@ onBeforeUnmount(() => {
 
   .home__dot--active {
     background: var(--color-blue-500);
+  }
+}
+
+/* ---------- Н61 — владелец 24.11.2026: единый ритм мобильной главной («Единый ритм без фонов»), только < 1024.
+   Один фон (Gray 100) до формы; одинаковые боковые поля у всех разделов (как у формы: 16 @380 / 24 @768 — Figma I2074:2565 @380,
+   I2064:1582 @768) и один вертикальный интервал между разделами (hero → Проекты → перебивка → Услуги → форма) — --space-72
+   (48 @380 / 43 @768). Hero — по содержимому, верхнее поле под навбар. Подписи разделов — «номер — линия — название».
+   Нужно подтверждение дизайнера. TODO(question): new Н61 — владелец 24.11.2026: единый ритм мобильной главной */
+@media (max-width: 1023px) {
+  .home {
+    --_hm-m-x: var(--space-28); /* 16 — Figma I2074:2565 @380 */
+    --_hm-rhythm: var(--space-72); /* 48 @380 / 43 @768 — один интервал между разделами */
+    --_hm-pad-x: var(--_hm-m-x);
+    --_hm-sv-pad-x: var(--_hm-m-x);
+    --_hm-gap: var(--space-36); /* подпись → содержимое, 24 @380 / 22 @768 */
+  }
+
+  .home main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--_hm-rhythm);
+    padding-bottom: var(--_hm-rhythm); /* до формы тот же интервал */
+  }
+
+  .home__hero {
+    padding: calc(var(--_hm-scroll-margin) + var(--_hm-gap)) var(--_hm-m-x) 0; /* верх — под навбар (Н17) + зазор */
+  }
+
+  .home .home__hero :deep(.hero-gif) {
+    min-height: 0; /* hero по содержимому, без пустой полосы */
+  }
+
+  .home__projects,
+  .home__services {
+    padding: 0 var(--_hm-m-x);
+  }
+
+  .home .home__typing {
+    padding: 0 var(--_hm-m-x);
+  }
+
+  /* каракуля-стрелка — в промежутке над перебивкой, справа (там нет ни текста, ни индикатора карусели) */
+  .home__doodle--typing-a {
+    top: calc(var(--doodle-size) * -0.75);
+    right: var(--_hm-m-x);
+    bottom: auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .home {
+    --_hm-m-x: var(--space-40); /* 24 — Figma I2064:1582 @768 */
   }
 }
 

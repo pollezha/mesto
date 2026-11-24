@@ -59,6 +59,7 @@
     "hero": "Full-service design studio: from brand identity to digital product development",
     "projects": {
       "title": "Projects",
+      "num": "01",
       "carouselLabel": "Projects, swipe sideways"
     },
     "cases": {
@@ -85,6 +86,7 @@
     },
     "services": {
       "title": "Services",
+      "num": "02",
       "blocks": {
         "branding": {
           "title": "Branding",

@@ -15,8 +15,10 @@ const props = withDefaults(
   defineProps<{
     /** Уровень заголовка в разметке; подписи разделов — h2 (Р56, ТЗ «Общие правила» п. 9). Вид от уровня не зависит. */
     level?: HeadingLevel
+    /** Н61: номер раздела («01») — виден только на < 1024: «номер — линия — название». */
+    num?: string
   }>(),
-  { level: 2 },
+  { level: 2, num: undefined },
 )
 
 const tag = computed(() => `h${props.level}`)
@@ -24,7 +26,11 @@ const tag = computed(() => `h${props.level}`)
 
 <template>
   <component :is="tag" class="caption-heading">
-    <slot />
+    <template v-if="num">
+      <span class="caption-heading__num" aria-hidden="true">{{ num }}</span>
+      <span class="caption-heading__line" aria-hidden="true" />
+    </template>
+    <span class="caption-heading__text"><slot /></span>
   </component>
 </template>
 
@@ -42,6 +48,35 @@ const tag = computed(() => `h${props.level}`)
   font-weight: var(--fw-medium);
   text-align: right;
   white-space: nowrap;
+}
+
+/* Н61 — владелец 24.11.2026: на < 1024 подпись — одна строка на всю ширину «01 ──── Проекты»; на ≥ 1024 номера и линии нет.
+   Номер — Gray 500 тем же кеглем, линия 1 px Gray 300. Нужно подтверждение дизайнера. TODO(question): new Н61 */
+.caption-heading__num,
+.caption-heading__line {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .caption-heading:has(.caption-heading__num) {
+    display: flex;
+    gap: var(--space-20);
+    align-items: center;
+    padding-right: 0;
+    text-align: left;
+  }
+
+  .caption-heading__num {
+    display: block;
+    color: var(--color-gray-500);
+  }
+
+  .caption-heading__line {
+    display: block;
+    flex: 1 1 auto;
+    height: 1px;
+    background: var(--color-gray-300);
+  }
 }
 
 @media (min-width: 768px) {
