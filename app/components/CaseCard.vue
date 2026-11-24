@@ -163,6 +163,7 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     --cc-layout: 998; /* 2064:1431 */
     --cc-feat-h: 671; /* 2064:1432 */
     --cc-feat-img-top: 127; /* 2064:1433 */
+    --cc-feat-img-h: 459; /* 2064:1433, высота рамки фото (782 × 459) */
     --cc-feat-text-x: 21; /* 2064:1434 */
     --cc-feat-text-y: 23; /* 2064:1434 */
     --cc-feat-text-w: 622; /* 2064:1434 */
@@ -176,28 +177,52 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     gap: var(--cc-media-gap);
   }
 
+  /* Н47 — владелец 24.11.2026: кейс 1 по высоте окна — уменьшается только фото, ширина и текст как во фрейме
+     Высота карточки = min(пропорциональная, окно − зазор сверху и снизу (как между карточками, --space-48)).
+     --cc-u — одна единица фрейма в px (доля ширины карточки), --cc-h — итоговая высота карточки. */
   .case-card--1 {
+    --cc-avail-h: calc(100vh / var(--site-zoom) - 2 * var(--space-48));
+    --cc-u: calc(100cqw / var(--cc-layout));
+    --cc-h: min(calc(var(--cc-feat-h) * var(--cc-u)), var(--cc-avail-h));
+
     display: block;
+    container-type: inline-size;
     aspect-ratio: var(--cc-layout) / var(--cc-feat-h);
+    max-height: var(--cc-avail-h);
     padding: 0;
   }
 
+  @supports (height: 100svh) {
+    .case-card--1 {
+      --cc-avail-h: calc(100svh / var(--site-zoom) - 2 * var(--space-48));
+    }
+  }
+
+  /* фото по центру; верх — как во фрейме, низ пропорционален высоте; рамка не обрезается и не растягивается */
   .case-card--1 .case-card__media {
     position: absolute;
-    top: calc(var(--cc-feat-img-top) / var(--cc-feat-h) * 100%);
+    top: calc(var(--cc-feat-img-top) * var(--cc-u));
     left: 50%;
     transform: translateX(-50%);
+    width: auto;
+    height: max(
+      calc(
+        var(--cc-h) * (1 - (var(--cc-feat-h) - var(--cc-feat-img-top) - var(--cc-feat-img-h)) / var(--cc-feat-h)) -
+          var(--cc-feat-img-top) * var(--cc-u)
+      ),
+      0px
+    );
   }
 
   .case-card--1 .case-card__text {
     position: absolute;
-    top: calc(var(--cc-feat-text-y) / var(--cc-feat-h) * 100%);
+    top: calc(var(--cc-feat-text-y) * var(--cc-u));
     left: calc(var(--cc-feat-text-x) / var(--cc-layout) * 100%);
     width: calc(var(--cc-feat-text-w) / var(--cc-layout) * 100%);
   }
 
   /* фото — рамка своей ширины фрейма как доля ряда (число --case-image-w, пропорции и радиус — в CaseImage) */
-  .case-card .case-card__media {
+  .case-card:not(.case-card--1) .case-card__media {
     flex: none;
     width: calc(var(--case-image-w) / var(--cc-layout) * 100%);
   }
@@ -245,6 +270,7 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     --cc-layout: 1250; /* 2063:1473 */
     --cc-feat-h: 839; /* 2063:1474 */
     --cc-feat-img-top: 159; /* 2063:1475 */
+    --cc-feat-img-h: 574; /* 2063:1475, высота рамки фото */
     --cc-feat-text-x: 27; /* 2063:1476 */
     --cc-feat-text-y: 29; /* 2063:1476 */
     --cc-feat-text-w: 711; /* 2063:1476 */
@@ -271,6 +297,7 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     --cc-layout: 1408; /* 2063:1361 */
     --cc-feat-h: 944; /* 2063:1362 */
     --cc-feat-img-top: 179; /* 2063:1363 */
+    --cc-feat-img-h: 646; /* 2063:1363, высота рамки фото */
     --cc-feat-text-x: 30; /* 2063:1364 */
     --cc-feat-text-y: 33; /* 2063:1364 */
     --cc-feat-text-w: 799; /* 2063:1364 */
@@ -289,6 +316,7 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     --cc-layout: 1880; /* 35:2178 */
     --cc-feat-h: 1258; /* 35:2179 */
     --cc-feat-img-top: 199; /* 35:2180 */
+    --cc-feat-img-h: 861; /* 35:2180, высота рамки фото */
     --cc-feat-text-x: 40; /* 35:2181 */
     --cc-feat-text-y: 44; /* 35:2181 */
     --cc-feat-text-w: 977; /* 35:2181 */
