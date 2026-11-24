@@ -33,9 +33,9 @@ function srcset(width: number): string {
   return `${url(width)} 1x, ${url(width, true)} 2x`
 }
 
-// Н56: на < 1024 фото лежит в карточке карусели — ширина ≈ 85 % (< 768) / 65 % (768–1023) ширины экрана, поэтому нужен
-// выбор растра по w-дескрипторам и sizes (чёткие фото на 2x / 3x). Пропорция рамки меняется на 768 (кейсы 2–4: 356 / 254
-// → 744 / 513), поэтому до 768 берутся только растры 380, с 768 — 768. Ширины файлов — фактические.
+// Н64 (карусель Н56 снята): на < 1024 карточки — столбик на ширину ряда; выбор растра по w-дескрипторам и sizes
+// (чёткие фото на 2x / 3x). Пропорция рамки меняется на 768 (кейсы 2–4: 356 / 254 → 744 / 513), поэтому до 768 берутся
+// только растры 380, с 768 — 768. Ширины файлов — фактические.
 // Кейс 1: 1920@2x — тот же кадр, что 380 (рамка 1466 / 861 = 332 / 195), самый крупный экспорт.
 const phoneFiles: Record<number, Array<[number, boolean, number]>> = {
   1: [
@@ -89,10 +89,12 @@ const featFiles: Array<[number, boolean, number]> = [
   [1920, false, 1466],
   [1920, true, 2932],
 ]
-const featSet = computed(() =>
-  featFiles.map(([w, x2, px]) => `${url(w, x2)} ${px}w`).join(', '),
-)
+const featSet = computed(() => featFiles.map(([w, x2, px]) => `${url(w, x2)} ${px}w`).join(', '))
 const phoneSet = computed(() => wSet(phoneFiles))
+// sizes < 1024: ширина рамки фото = экран − боковые поля главной (16 / 24, index.vue --_hm-m-x); у кейса 1 ещё
+// внутренний отступ карточки Featured по 12 / 24 с каждой стороны (CaseCard --cc-feat-pad)
+const phoneSizes = computed(() => (props.n === 1 ? 'calc(100vw - 56px)' : 'calc(100vw - 32px)'))
+const tabletSizes = computed(() => (props.n === 1 ? 'calc(100vw - 96px)' : 'calc(100vw - 48px)'))
 const tabletSet = computed(() => wSet(tabletFiles))
 </script>
 
@@ -103,14 +105,14 @@ const tabletSet = computed(() => wSet(tabletFiles))
         v-if="!framed"
         media="(max-width: 767px)"
         :srcset="phoneSet"
-        sizes="85vw"
+        :sizes="phoneSizes"
         type="image/webp"
       />
       <source
         v-if="!framed"
         media="(max-width: 1023px)"
         :srcset="tabletSet"
-        sizes="65vw"
+        :sizes="tabletSizes"
         type="image/webp"
       />
       <source

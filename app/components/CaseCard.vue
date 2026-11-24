@@ -14,7 +14,6 @@
 // ширины: 998 / 1250 / 1408 / 1880); на контрольных ширинах равны фрейму, между ними растут вместе с рядом.
 // На 768 и 380 — ширина карточки. Перенос в названиях — по ширине блока, ТЗ п. 6 (ручных переносов нет).
 // Н26 — решение владельца 20.11.2026: размеры карточек на промежуточных ширинах — доли ширины ряда, пропорционально.
-import ArrowIcon from '~/components/ArrowIcon.vue'
 import CaseImage from '~/components/CaseImage.vue'
 import Tag from '~/components/Tag.vue'
 
@@ -58,12 +57,7 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
       </template>
       <h3 class="case-card__title">{{ $t(`home.cases.case${n}.title`) }}</h3>
       <p class="case-card__year">{{ $t(`home.cases.case${n}.year`) }}</p>
-      <!-- TODO(question): new Н62 — владелец 24.11.2026: явный призыв «Смотреть кейс» у кейса 1 (текст и вид — на подтверждение дизайнера).
-           span, а не кнопка: вся карточка уже ссылка; текст входит в имя ссылки -->
-      <span v-if="n === 1" class="case-card__cta">
-        <span class="case-card__cta-label">{{ $t('home.cases.view') }}</span>
-        <ArrowIcon class="case-card__cta-icon" />
-      </span>
+      <!-- Н62 — владелец 24.11.2026: призыв «Смотреть кейс» убран; вся карточка кейса 1 — ссылка -->
     </div>
   </component>
 </template>
@@ -92,8 +86,8 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   text-decoration: none;
 }
 
-/* < 1024 (Н56): карточка по содержимому, фото в пропорциях рамки Figma своей ширины; в карусели главной все
-   карточки ряда растягиваются до самой высокой (страница). Н51 — только ≥ 1024, блок ниже. */
+/* < 1024 (Н64): карточки столбиком, каждая по содержимому, фото в пропорциях рамки Figma своей ширины.
+   Н51 — только ≥ 1024, блок ниже. */
 .case-card--1 {
   gap: var(--cc-feat-gap);
   padding: var(--cc-feat-pad) var(--cc-feat-pad) var(--cc-feat-pad-bottom);
@@ -129,70 +123,9 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   color: var(--color-white);
 }
 
-/* Н62: призыв «Смотреть кейс» у кейса 1 — вид кнопки With Icon (Figma 2091:3514 @mobile, 2091:2923 @desktop),
-   цвета и состояния как у Button; span внутри ссылки-карточки */
-.case-card__cta {
-  --cc-cta-pad-y: 12px; /* Figma 2091:3514 */
-  --cc-cta-pad-x: 20px; /* Figma 2091:3514 */
-  --cc-cta-gap: 8px; /* Figma 2091:3514 */
-  --cc-cta-radius: var(--radius-12); /* Figma 2091:3514: 12 */
-  --cc-cta-fs: 12px; /* Figma 2091:3514: caption 2 (Mobile) */
-  --cc-cta-lh: 16px; /* Figma 2091:3514 */
-  --cc-cta-icon: 13.714px; /* Figma 2091:3516 */
-
-  display: inline-flex;
-  align-items: center;
-  gap: var(--cc-cta-gap);
-  margin-top: var(--space-16);
-  padding: var(--cc-cta-pad-y) var(--cc-cta-pad-x);
-  border-radius: var(--cc-cta-radius);
-  background-color: var(--color-blue-500);
-  color: var(--color-white);
-  font-size: var(--cc-cta-fs);
-  line-height: var(--cc-cta-lh);
-  font-weight: var(--fw-medium);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color 300ms ease-out;
-}
-
-.case-card__cta-icon {
-  width: var(--cc-cta-icon);
-  height: var(--cc-cta-icon);
-  transition: transform 300ms ease-out;
-}
-
-.case-card--1:focus-visible .case-card__cta {
-  background-color: var(--color-blue-600);
-}
-
-.case-card--1:focus-visible .case-card__cta-icon {
-  transform: translate(2px, -2px);
-}
-
 @media (pointer: fine) {
   .case-card--1 {
     cursor: pointer;
-  }
-
-  .case-card--1:hover .case-card__cta {
-    background-color: var(--color-blue-600);
-  }
-
-  .case-card--1:hover .case-card__cta-icon {
-    transform: translate(2px, -2px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .case-card__cta,
-  .case-card__cta-icon {
-    transition: none;
-  }
-
-  .case-card--1:hover .case-card__cta-icon,
-  .case-card--1:focus-visible .case-card__cta-icon {
-    transform: none;
   }
 }
 
@@ -324,20 +257,7 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   .case-card--1 .case-card__text {
     order: 0;
     flex: 1 1 0;
-    align-self: stretch; /* Н62: призыв прижат к низу колонки */
-    margin: var(--cc-pad);
-  }
-
-  .case-card--1 .case-card__cta {
-    --cc-cta-pad-y: 0px; /* Figma 2091:2923: высота 64 задана min-height */
-    --cc-cta-pad-x: 24px; /* Figma 2091:2923 */
-    --cc-cta-radius: 20px; /* Figma 2091:2923 */
-    --cc-cta-fs: var(--fs-caption-2);
-    --cc-cta-lh: var(--lh-caption-2);
-    --cc-cta-icon: 32px; /* Figma 2091:2925 */
-
-    min-height: 64px; /* Figma 2091:2923 */
-    margin-top: auto;
+    margin: var(--cc-pad) var(--cc-pad) 0 var(--cc-pad); /* название и год сверху, как до Н62 */
   }
 
   /* Н51 — владелец 24.11.2026: каждый кейс 2–4 — экран окна. Карточка = высота окна, ряд по центру по вертикали;

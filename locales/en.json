@@ -59,11 +59,9 @@
     "hero": "Full-service design studio: from brand identity to digital product development",
     "projects": {
       "title": "Projects",
-      "num": "01",
-      "carouselLabel": "Projects, swipe sideways"
+      "num": "01"
     },
     "cases": {
-      "view": "View case",
       "case1": {
         "title": "Rebranding for the pharmacy chain",
         "year": "2026"

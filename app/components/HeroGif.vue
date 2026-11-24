@@ -5,8 +5,10 @@
 // Figma (надпись во фрейме «Header» экрана, RU и EN одинаково): 35:2174 @1920, 2063:1357 @1440,
 // 2063:1469 @1280, 2064:1427 @1024, 2064:1539 @768, 35:2470 @380 (EN: 51:13660, 2065:1491, 2065:1668,
 // 2066:1742, 2066:1919, 51:13708). Надпись по центру фрейма Header (по горизонтали и вертикали).
-// Эффект — только при (pointer: fine) и ≥ 1024: иначе ни гифа, ни разбивки на буквы в DOM, слушатели не вешаются.
-// При reduced motion буквы темнеют сразу (без инерции), гифа нет.
+// Эффект курсора — только при (pointer: fine) и ≥ 1024, слушатели вешаются только там. На тач и < 1024 — «автопилот» (Н64):
+// тот же гиф сам летает по надписи по замкнутой траектории (кривая Лиссажу 2:3), буквы темнеют по той же логике.
+// При reduced motion на ≥ 1024 буквы темнеют сразу (без инерции), гифа нет; на тач и < 1024 — ни гифа, ни разбивки,
+// надпись чёрная (CSS ниже).
 // Гиф: анимированный WebP, собран из 7 кадров 38:7680, 38:7687, 38:7694, 38:7701, 38:7714, 38:7723,
 // 38:7728 (полотно 348×330, прозрачный фон; кадры 02, 05, 07 выходят за карточку 160×217).
 
@@ -15,7 +17,9 @@ const { t } = useI18n()
 // Н55 — решение владельца 24.11.2026: подсветка букв по близости (letters): буква темнеет тем сильнее, чем ближе к гифу.
 
 const textEl = ref<HTMLElement | null>(null)
+const gifEl = ref<HTMLElement | null>(null)
 const enabled = ref(false)
+const auto = ref(false) // Н64: автопилот на тач и < 1024
 const active = ref(false)
 const reduced = ref(false)
 
@@ -37,8 +41,14 @@ const GIF_SETTLE = 0.5 // px: ближе — считаем, что догнал
 const HL_RADIUS = 160 // px (локальные): подсветка спадает до нуля на этом расстоянии от гифа
 const HL_FADE = 0.12 // k затухания буквы за кадр
 const HL_SETTLE = 0.004
+// TODO(question): new Н64 — владелец 24.11.2026: автоанимация гифа и подсветки на телефоне
+const AUTO_PERIOD = 10000 // мс: полный круг траектории
+const AUTO_RADIUS_K = 0.3 // радиус подсветки в автопилоте — доля ширины блока надписи (~106 px @380, ~204 @768)
+let hlRadius = HL_RADIUS
 
 // измеренные один раз рамки букв (локальные координаты внутри textEl)
+let textW = 0 // локальные размеры блока надписи (для траектории автопилота)
+let textH = 0
 let toks: HTMLElement[] = []
 let box: { l: number; t: number; r: number; b: number }[] = []
 let level: number[] = []
@@ -51,6 +61,9 @@ function measure() {
   toks = Array.from(el.querySelectorAll<HTMLElement>('.hero-gif__tok'))
   const o = el.getBoundingClientRect()
   const zoom = siteZoom()
+  textW = o.width / zoom
+  textH = o.height / zoom
+  hlRadius = auto.value ? Math.max(HL_RADIUS * 0.5, textW * AUTO_RADIUS_K) : HL_RADIUS
   box = toks.map((tk) => {
     const r = tk.getBoundingClientRect()
     return {
@@ -86,7 +99,7 @@ function paintLetters(on: boolean): boolean {
     const s = on
       ? Math.min(
           1,
-          Math.max(0, 1 - Math.hypot(gx - (b.l + b.r) / 2, gy - (b.t + b.b) / 2) / HL_RADIUS),
+          Math.max(0, 1 - Math.hypot(gx - (b.l + b.r) / 2, gy - (b.t + b.b) / 2) / hlRadius),
         )
       : 0
     const target = s * s * (3 - 2 * s) // smoothstep: мягкий спад без видимой границы
@@ -148,6 +161,95 @@ function onLeave() {
   tick() // буквы плавно гаснут
 }
 
+// ---------- Н64: автопилот (тач и < 1024) ----------
+// Цель — точка на кривой Лиссажу 2:3 в пределах блока надписи; гиф и буквы — с той же инерцией, что у курсора.
+// В кадре — только запись transform гифа и цвета букв (рамки букв измерены заранее), чтения layout нет.
+let autoFrame = 0
+let inView = false
+let pageVisible = true
+let autoFresh = true
+let io: IntersectionObserver | null = null
+
+function autoTick(now: number) {
+  autoFrame = 0
+  if (!auto.value || !inView || !pageVisible) return
+  const ph = (now / AUTO_PERIOD) * Math.PI * 2
+  x = textW / 2 + (textW / 2 - 16) * Math.sin(2 * ph + 0.6)
+  y = textH / 2 + (textH / 2) * Math.sin(3 * ph)
+  if (autoFresh) {
+    gx = x
+    gy = y
+    autoFresh = false
+    active.value = true // гиф появляется уже на траектории
+  }
+  gx += (x - gx) * GIF_FOLLOW
+  gy += (y - gy) * GIF_FOLLOW
+  const g = gifEl.value
+  if (g) {
+    g.style.transform = `translate(calc(${gx}px - var(--_hero-gif-cx)), calc(${gy}px - var(--_hero-gif-cy)))`
+  }
+  paintLetters(true)
+  autoFrame = requestAnimationFrame(autoTick)
+}
+
+function autoRun() {
+  if (auto.value && inView && pageVisible && !autoFrame) {
+    autoFresh = true
+    autoFrame = requestAnimationFrame(autoTick)
+  }
+}
+
+function onVisibility() {
+  pageVisible = !document.hidden
+  if (!pageVisible && autoFrame) {
+    cancelAnimationFrame(autoFrame)
+    autoFrame = 0
+  }
+  autoRun()
+}
+
+function startAuto(el: HTMLElement) {
+  auto.value = true
+  enabled.value = true
+  pageVisible = !document.hidden
+  document.addEventListener('visibilitychange', onVisibility)
+  void nextTick(() => {
+    measure()
+    if (!ro) {
+      ro = new ResizeObserver(() => measure())
+      ro.observe(el)
+      void document.fonts?.ready.then(measure)
+    }
+    io = new IntersectionObserver((entries) => {
+      inView = entries.some((e) => e.isIntersecting)
+      if (inView) autoRun()
+      else if (autoFrame) {
+        cancelAnimationFrame(autoFrame)
+        autoFrame = 0
+      }
+    })
+    io.observe(el)
+  })
+}
+
+function stopAuto() {
+  auto.value = false
+  enabled.value = false
+  active.value = false
+  inView = false
+  if (autoFrame) cancelAnimationFrame(autoFrame)
+  autoFrame = 0
+  io?.disconnect()
+  io = null
+  ro?.disconnect()
+  ro = null
+  toks = []
+  box = []
+  level = []
+  shown = []
+  document.removeEventListener('visibilitychange', onVisibility)
+}
+
 function bind(el: HTMLElement) {
   el.addEventListener('pointerenter', onEnter)
   el.addEventListener('pointermove', onMove)
@@ -165,6 +267,7 @@ function sync() {
   if (!el || !mql || !rmql) return
   reduced.value = rmql.matches
   const on = mql.matches
+  if (auto.value && (on || reduced.value)) stopAuto()
   if (on && !enabled.value) {
     enabled.value = true
     bind(el)
@@ -176,11 +279,15 @@ function sync() {
         void document.fonts?.ready.then(measure)
       }
     })
-  } else if (!on && enabled.value) {
+  } else if (!on && enabled.value && !auto.value) {
     enabled.value = false
     active.value = false
     unbind(el)
+    ro?.disconnect()
+    ro = null
   }
+  // Н64: тач или < 1024, без reduced motion — автопилот
+  if (!on && !reduced.value && !auto.value) startAuto(el)
 }
 
 onMounted(() => {
@@ -195,6 +302,7 @@ onBeforeUnmount(() => {
   mql?.removeEventListener('change', sync)
   rmql?.removeEventListener('change', sync)
   ro?.disconnect()
+  stopAuto()
   if (textEl.value) unbind(textEl.value)
   if (frame) cancelAnimationFrame(frame)
 })
@@ -205,7 +313,7 @@ onBeforeUnmount(() => {
     <div
       ref="textEl"
       class="hero-gif__text"
-      :class="{ 'hero-gif__text--gif': enabled && !reduced }"
+      :class="{ 'hero-gif__text--gif': enabled && !reduced, 'hero-gif__text--auto': auto }"
     >
       <h1 class="hero-gif__line" :aria-label="enabled ? t('home.hero') : undefined">
         <template v-if="enabled">
@@ -218,6 +326,7 @@ onBeforeUnmount(() => {
       </h1>
       <span
         v-if="enabled && !reduced"
+        ref="gifEl"
         class="hero-gif__gif"
         :class="{ 'hero-gif__gif--on': active }"
         aria-hidden="true"
@@ -316,9 +425,26 @@ onBeforeUnmount(() => {
   opacity: 1;
 }
 
-/* Н61 — владелец 24.11.2026: на < 1024 нет подсветки курсором, поэтому надпись сразу чёрная (было Gray 500, блёкло).
-   Откат — убрать правило. TODO(question): new Н61 */
-@media (max-width: 1023px) {
+/* Н64: холст гифа (прозрачный) у края надписи выходил за экран и растягивал страницу вширь — обрезаем по секции */
+@media (max-width: 1023px), (pointer: coarse) {
+  .hero-gif {
+    overflow-x: clip;
+  }
+}
+
+/* Н64: автопилот — курсора нет; цвет букв ставит кадр анимации с инерцией, CSS-transition только добавил бы отставание */
+.hero-gif__text--auto {
+  cursor: default;
+}
+
+.hero-gif__text--auto .hero-gif__tok {
+  transition: none;
+}
+
+/* Н64 (заменяет Н61): при reduced motion на тач и < 1024 нет ни гифа, ни подсветки — надпись сразу чёрная.
+   TODO(question): new Н64 */
+@media (prefers-reduced-motion: reduce) and (max-width: 1023px),
+  (prefers-reduced-motion: reduce) and (pointer: coarse) {
   .hero-gif__line {
     color: var(--color-black);
   }

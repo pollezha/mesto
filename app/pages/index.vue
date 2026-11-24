@@ -35,76 +35,6 @@ function onLogo(event: MouseEvent) {
 }
 
 const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
-
-// Н56 — решение владельца 24.11.2026: на < 1024 «Проекты» — горизонтальная карусель (нативный scroll snap по x),
-// на ≥ 1024 раскладка Н51 без изменений. Роль region, фокус и стрелки включаются только в режиме карусели (< 1024):
-// до гидрации и на десктопе разметка нейтральна. TODO(question): new Н56
-const isCarousel = ref(false)
-const activeCase = ref(0)
-const scroller = ref<HTMLElement | null>(null)
-let carouselMq: MediaQueryList | undefined
-let raf = 0
-
-function caseItems(): HTMLElement[] {
-  return Array.from(scroller.value?.querySelectorAll<HTMLElement>('.home__case-item') ?? [])
-}
-function snapPad(): number {
-  return scroller.value ? parseFloat(getComputedStyle(scroller.value).scrollPaddingLeft) || 0 : 0
-}
-function updateActive() {
-  const el = scroller.value
-  if (!el || !isCarousel.value) return
-  const items = caseItems()
-  if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 2) {
-    activeCase.value = items.length - 1
-    return
-  }
-  const pad = snapPad()
-  let best = 0
-  let bestDist = Infinity
-  items.forEach((item, i) => {
-    const d = Math.abs(item.offsetLeft - pad - el.scrollLeft)
-    if (d < bestDist) {
-      bestDist = d
-      best = i
-    }
-  })
-  activeCase.value = best
-}
-function onCasesScroll() {
-  if (raf) return
-  raf = requestAnimationFrame(() => {
-    raf = 0
-    updateActive()
-  })
-}
-function goToCase(i: number) {
-  const el = scroller.value
-  const item = caseItems()[i]
-  if (!el || !item) return
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  el.scrollTo({ left: item.offsetLeft - snapPad(), behavior: reduce ? 'auto' : 'smooth' })
-}
-function onCasesKey(event: KeyboardEvent) {
-  if (!isCarousel.value || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
-  if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
-  event.preventDefault()
-  const next = activeCase.value + (event.key === 'ArrowRight' ? 1 : -1)
-  goToCase(Math.min(Math.max(next, 0), caseItems().length - 1))
-}
-function syncCarousel() {
-  isCarousel.value = !!carouselMq?.matches
-  nextTick(updateActive)
-}
-onMounted(() => {
-  carouselMq = window.matchMedia('(max-width: 1023px)')
-  carouselMq.addEventListener('change', syncCarousel)
-  syncCarousel()
-})
-onBeforeUnmount(() => {
-  carouselMq?.removeEventListener('change', syncCarousel)
-  if (raf) cancelAnimationFrame(raf)
-})
 </script>
 
 <template>
@@ -131,49 +61,32 @@ onBeforeUnmount(() => {
         <CaptionHeading class="home__caption-m" :num="$t('home.projects.num')">{{
           $t('home.projects.title')
         }}</CaptionHeading>
-        <div class="home__carousel">
-          <div
-            ref="scroller"
-            class="home__cases"
-            :role="isCarousel ? 'region' : undefined"
-            :aria-label="isCarousel ? $t('home.projects.carouselLabel') : undefined"
-            :tabindex="isCarousel ? 0 : undefined"
-            @scroll.passive="onCasesScroll"
-            @keydown="onCasesKey"
-          >
-            <ul class="home__track">
-              <li
-                v-for="n in [1, 2, 3, 4] as const"
-                :key="n"
-                class="home__case-item"
-                :class="n === 1 && 'home__stop-first'"
-              >
-                <!-- Н60: на ≥ 1024 подпись и кейс 1 — один экран (обёртка), на < 1024 обёртка не участвует в раскладке;
-                     подпись для десктопа — второй экземпляр (скрыт на < 1024), верхний — для мобильной карусели -->
-                <div class="home__first">
-                  <CaptionHeading
-                    v-if="n === 1"
-                    class="home__caption-d"
-                    :num="$t('home.projects.num')"
-                    >{{ $t('home.projects.title') }}</CaptionHeading
-                  >
-                  <CaseCard
-                    :n="n"
-                    class="home__case"
-                    :class="[`home__case--${n}`, n > 1 && 'home__stop']"
-                  />
-                </div>
-              </li>
-            </ul>
-          </div>
-          <div class="home__dots" aria-hidden="true">
-            <span
-              v-for="n in 4"
+        <!-- Н64: на < 1024 кейсы — столбик по Figma 35:2474 @380 / 2064:1543 @768 (карусель Н56 снята) -->
+        <div class="home__cases">
+          <ul class="home__track">
+            <li
+              v-for="n in [1, 2, 3, 4] as const"
               :key="n"
-              class="home__dot"
-              :class="{ 'home__dot--active': activeCase === n - 1 }"
-            />
-          </div>
+              class="home__case-item"
+              :class="n === 1 && 'home__stop-first'"
+            >
+              <!-- Н60: на ≥ 1024 подпись и кейс 1 — один экран (обёртка), на < 1024 обёртка не участвует в раскладке;
+                   подпись для десктопа — второй экземпляр (скрыт на < 1024), верхний — для мобильной раскладки -->
+              <div class="home__first">
+                <CaptionHeading
+                  v-if="n === 1"
+                  class="home__caption-d"
+                  :num="$t('home.projects.num')"
+                  >{{ $t('home.projects.title') }}</CaptionHeading
+                >
+                <CaseCard
+                  :n="n"
+                  class="home__case"
+                  :class="[`home__case--${n}`, n > 1 && 'home__stop']"
+                />
+              </div>
+            </li>
+          </ul>
         </div>
       </section>
 
@@ -338,53 +251,21 @@ onBeforeUnmount(() => {
     --_hm-logo-w-en: 218px; /* Figma 51:13658 @1920 (EN) */
   }
 }
-/* ---------- Н56 — владелец 24.11.2026: на < 1024 (телефон и 768) разделы по содержимому, без scroll snap и высоты окна;
-   «Проекты» — горизонтальная карусель. Н51 остаётся для ≥ 1024 (блок ниже). Нужно подтверждение дизайнера.
-   Высоты разделов — как во фреймах 380 / 768 (hero — свой --_hero-height в HeroGif, перебивка — паддинги Typing). TODO(question): new Н56 */
+/* ---------- Н64 (снимает карусель Н56) — владелец 24.11.2026: на < 1024 «Проекты» — кейсы друг за другом, как в Figma
+   35:2474 @380 / 2064:1543 @768: кейс 1 Mobile Featured, кейсы 2–4 Stacked, промежуток --_hm-cases-gap. Разделы по содержимому,
+   без scroll snap и высоты окна (Н56). Н51 остаётся для ≥ 1024 (блок ниже). */
 @media (max-width: 1023px) {
   .home__projects {
     scroll-margin-top: var(--_hm-scroll-margin); /* ТЗ «Общие правила» п. 9, Н17 */
   }
 
-  .home__carousel {
-    display: flex;
-    flex-direction: column;
-    gap: var(
-      --_hm-cases-gap
-    ); /* зазор «карточка → индикатор» = зазор между карточками, Figma 35:2474 @380 / 2064:1543 @768 */
-    min-width: 0;
-  }
-
-  /* лента на всю ширину экрана: поля раздела — внутри (padding + scroll-padding), край следующей карточки виден */
-  .home__cases {
-    position: relative;
-    margin-inline: calc(-1 * var(--_hm-pad-x));
-    padding-inline: var(--_hm-pad-x);
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-padding-inline: var(--_hm-pad-x);
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-  }
-
-  .home__cases::-webkit-scrollbar {
-    display: none;
-  }
-
   .home__track {
     display: flex;
+    flex-direction: column;
     gap: var(--_hm-cases-gap); /* 20 / 29 — Figma 35:2474 @380 / 2064:1543 @768 */
-    align-items: stretch; /* все карточки одной высоты — по самой высокой */
     margin: 0;
     padding: 0;
     list-style: none;
-  }
-
-  .home__case-item {
-    display: flex;
-    flex: 0 0 var(--_hm-card-w);
-    min-width: 0;
-    scroll-snap-align: start;
   }
 
   .home__first {
@@ -393,28 +274,6 @@ onBeforeUnmount(() => {
 
   .home .home__caption-d {
     display: none;
-  }
-
-  .home__case-item :deep(.case-card) {
-    flex: 1 1 auto;
-  }
-
-  .home__dots {
-    display: flex;
-    gap: var(--space-10);
-    justify-content: center;
-  }
-
-  .home__dot {
-    width: var(--space-10);
-    height: var(--space-10);
-    border-radius: 50%;
-    background: var(--color-gray-300);
-    transition: background-color 300ms ease-out;
-  }
-
-  .home__dot--active {
-    background: var(--color-blue-500);
   }
 }
 
@@ -439,12 +298,19 @@ onBeforeUnmount(() => {
     padding-bottom: var(--_hm-rhythm); /* до формы тот же интервал */
   }
 
+  /* Н64: hero — первый экран: ~60 % высоты окна (Figma 35:2469 даёт 598 @380 / 720 @768 с пустотой ≈ 400 px под надписью —
+     оценка по виду, нужно подтверждение дизайнера), надпись по центру под навбаром (зона навбара — --_hm-scroll-margin, Н17);
+     боковое поле — как у разделов */
   .home__hero {
-    padding: calc(var(--_hm-scroll-margin) + var(--_hm-gap)) var(--_hm-m-x) 0; /* верх — под навбар (Н17) + зазор */
+    padding: var(--_hm-scroll-margin) var(--_hm-m-x) 0;
   }
 
   .home .home__hero :deep(.hero-gif) {
-    min-height: 0; /* hero по содержимому, без пустой полосы */
+    min-height: 60svh;
+  }
+
+  .home .home__hero :deep(.hero-gif__text) {
+    width: 100%; /* край надписи — поле раздела, как у остальных блоков (Figma: 353 из 380, 680 из 768) */
   }
 
   .home__projects,
@@ -453,6 +319,7 @@ onBeforeUnmount(() => {
   }
 
   .home .home__typing {
+    width: 100%; /* во flex-колонке margin auto иначе сжимает блок по содержимому */
     padding: 0 var(--_hm-m-x);
   }
 }
@@ -460,22 +327,6 @@ onBeforeUnmount(() => {
 @media (min-width: 768px) {
   .home {
     --_hm-m-x: var(--space-40); /* 24 — Figma I2064:1582 @768 */
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .home__dot {
-    transition: none;
-  }
-}
-
-.home {
-  --_hm-card-w: 85%; /* Н56: доля ширины ряда (ширина экрана − поля); виден край следующей карточки, нет в Figma */
-}
-
-@media (min-width: 768px) {
-  .home {
-    --_hm-card-w: 65%; /* Н56: на 768 карточка уже, виден край следующей; нет в Figma */
   }
 }
 
@@ -518,8 +369,7 @@ onBeforeUnmount(() => {
     scroll-snap-align: start;
   }
 
-  /* лента кейсов на десктопе — колонка карточек (Н51), обёртки карусели в раскладке не участвуют */
-  .home__carousel,
+  /* кейсы на десктопе — колонка карточек (Н51), список и элементы в раскладке не участвуют */
   .home__track,
   .home__case-item {
     display: contents;
@@ -546,10 +396,6 @@ onBeforeUnmount(() => {
 
   .home__projects {
     padding-top: 0; /* верх раздела = верх экрана Проекты (якорь #projects) */
-  }
-
-  .home__dots {
-    display: none;
   }
 
   .home__cases {
