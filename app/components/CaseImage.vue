@@ -33,45 +33,52 @@ function srcset(width: number): string {
   return `${url(width)} 1x, ${url(width, true)} 2x`
 }
 
-// Н51: на < 1024 рамка фото занимает остаток высоты окна и кадрируется (cover), поэтому нужная ширина растра —
-// не ширина рамки, а высота рамки × пропорция растра. Выбор по ширине растра (w-дескрипторы) и sizes от высоты окна:
-// оценка высоты рамки = окно − поля, заголовок, тег, зазоры (200px, с запасом). Ширины файлов — фактические.
-// Растры одного кадра (та же пропорция): [ширина экспорта, @2x, ширина файла]. Кейсы 1 и 4 дополнены 1920@2x —
-// самый крупный экспорт того же кадра; у кейсов 2–3 крупнее 768@2x нет (1920 — другой кадр).
-const lowFiles: Record<number, Array<[number, boolean, number]>> = {
+// Н56: на < 1024 фото лежит в карточке карусели — ширина ≈ 85 % (< 768) / 65 % (768–1023) ширины экрана, поэтому нужен
+// выбор растра по w-дескрипторам и sizes (чёткие фото на 2x / 3x). Пропорция рамки меняется на 768 (кейсы 2–4: 356 / 254
+// → 744 / 513), поэтому до 768 берутся только растры 380, с 768 — 768. Ширины файлов — фактические.
+// Кейс 1: 1920@2x — тот же кадр, что 380 (рамка 1466 / 861 = 332 / 195), самый крупный экспорт.
+const phoneFiles: Record<number, Array<[number, boolean, number]>> = {
   1: [
     [380, false, 332],
     [380, true, 664],
-    [768, false, 696],
-    [768, true, 1392],
-    [1920, false, 1466],
     [1920, true, 2932],
   ],
   2: [
     [380, false, 356],
     [380, true, 712],
-    [768, false, 744],
-    [768, true, 1451],
   ],
   3: [
     [380, false, 356],
     [380, true, 712],
-    [768, false, 744],
-    [768, true, 1488],
   ],
   4: [
     [380, false, 356],
     [380, true, 712],
-    [768, false, 744],
-    [768, true, 1488],
-    [1920, true, 2298],
   ],
 }
-const lowRatio: Record<number, number> = { 1: 1.7, 2: 1.45, 3: 1.45, 4: 1.45 }
-const lowSet = computed(() =>
-  (lowFiles[props.n] ?? []).map(([w, x2, px]) => `${url(w, x2)} ${px}w`).join(', '),
-)
-const lowSizes = computed(() => `max(100vw, calc((100svh - 200px) * ${lowRatio[props.n]}))`)
+const tabletFiles: Record<number, Array<[number, boolean, number]>> = {
+  1: [
+    [768, false, 696],
+    [768, true, 1392],
+  ],
+  2: [
+    [768, false, 744],
+    [768, true, 1451],
+  ],
+  3: [
+    [768, false, 744],
+    [768, true, 1488],
+  ],
+  4: [
+    [768, false, 744],
+    [768, true, 1488],
+  ],
+}
+function wSet(table: Record<number, Array<[number, boolean, number]>>): string {
+  return (table[props.n] ?? []).map(([w, x2, px]) => `${url(w, x2)} ${px}w`).join(', ')
+}
+const phoneSet = computed(() => wSet(phoneFiles))
+const tabletSet = computed(() => wSet(tabletFiles))
 </script>
 
 <template>
@@ -79,9 +86,16 @@ const lowSizes = computed(() => `max(100vw, calc((100svh - 200px) * ${lowRatio[p
     <picture>
       <source
         v-if="!framed"
+        media="(max-width: 767px)"
+        :srcset="phoneSet"
+        sizes="85vw"
+        type="image/webp"
+      />
+      <source
+        v-if="!framed"
         media="(max-width: 1023px)"
-        :srcset="lowSet"
-        :sizes="lowSizes"
+        :srcset="tabletSet"
+        sizes="65vw"
         type="image/webp"
       />
       <source media="(min-width: 1920px)" :srcset="srcset(1920)" type="image/webp" />

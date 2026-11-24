@@ -18,7 +18,8 @@ usePageSeo({
   alternates: true,
 })
 
-// Н51 — решение владельца 24.11.2026: каждый раздел главной — один экран на всех ширинах (scroll snap по вертикали).
+// Н51 — решение владельца 24.11.2026: каждый раздел главной — один экран (scroll snap по вертикали); с Н56 — только на ≥ 1024,
+// на < 1024 разделы по содержимому.
 // Класс на html снимается при уходе с главной (useHead живёт, пока жива страница). TODO(question): new Н51
 useHead({ htmlAttrs: { class: 'is-snap-home' } })
 
@@ -34,6 +35,76 @@ function onLogo(event: MouseEvent) {
 }
 
 const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
+
+// Н56 — решение владельца 24.11.2026: на < 1024 «Проекты» — горизонтальная карусель (нативный scroll snap по x),
+// на ≥ 1024 раскладка Н51 без изменений. Роль region, фокус и стрелки включаются только в режиме карусели (< 1024):
+// до гидрации и на десктопе разметка нейтральна. TODO(question): new Н56
+const isCarousel = ref(false)
+const activeCase = ref(0)
+const scroller = ref<HTMLElement | null>(null)
+let carouselMq: MediaQueryList | undefined
+let raf = 0
+
+function caseItems(): HTMLElement[] {
+  return Array.from(scroller.value?.querySelectorAll<HTMLElement>('.home__case-item') ?? [])
+}
+function snapPad(): number {
+  return scroller.value ? parseFloat(getComputedStyle(scroller.value).scrollPaddingLeft) || 0 : 0
+}
+function updateActive() {
+  const el = scroller.value
+  if (!el || !isCarousel.value) return
+  const items = caseItems()
+  if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 2) {
+    activeCase.value = items.length - 1
+    return
+  }
+  const pad = snapPad()
+  let best = 0
+  let bestDist = Infinity
+  items.forEach((item, i) => {
+    const d = Math.abs(item.offsetLeft - pad - el.scrollLeft)
+    if (d < bestDist) {
+      bestDist = d
+      best = i
+    }
+  })
+  activeCase.value = best
+}
+function onCasesScroll() {
+  if (raf) return
+  raf = requestAnimationFrame(() => {
+    raf = 0
+    updateActive()
+  })
+}
+function goToCase(i: number) {
+  const el = scroller.value
+  const item = caseItems()[i]
+  if (!el || !item) return
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  el.scrollTo({ left: item.offsetLeft - snapPad(), behavior: reduce ? 'auto' : 'smooth' })
+}
+function onCasesKey(event: KeyboardEvent) {
+  if (!isCarousel.value || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+  if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
+  event.preventDefault()
+  const next = activeCase.value + (event.key === 'ArrowRight' ? 1 : -1)
+  goToCase(Math.min(Math.max(next, 0), caseItems().length - 1))
+}
+function syncCarousel() {
+  isCarousel.value = !!carouselMq?.matches
+  nextTick(updateActive)
+}
+onMounted(() => {
+  carouselMq = window.matchMedia('(max-width: 1023px)')
+  carouselMq.addEventListener('change', syncCarousel)
+  syncCarousel()
+})
+onBeforeUnmount(() => {
+  carouselMq?.removeEventListener('change', syncCarousel)
+  if (raf) cancelAnimationFrame(raf)
+})
 </script>
 
 <template>
@@ -60,14 +131,34 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 
       <section id="projects" class="home__projects home__stop">
         <CaptionHeading>{{ $t('home.projects.title') }}</CaptionHeading>
-        <div class="home__cases">
-          <CaseCard
-            v-for="n in [1, 2, 3, 4] as const"
-            :key="n"
-            :n="n"
-            class="home__case"
-            :class="[`home__case--${n}`, { home__stop: n > 1 }]"
-          />
+        <div class="home__carousel">
+          <div
+            ref="scroller"
+            class="home__cases"
+            :role="isCarousel ? 'region' : undefined"
+            :aria-label="isCarousel ? $t('home.projects.carouselLabel') : undefined"
+            :tabindex="isCarousel ? 0 : undefined"
+            @scroll.passive="onCasesScroll"
+            @keydown="onCasesKey"
+          >
+            <ul class="home__track">
+              <li v-for="n in [1, 2, 3, 4] as const" :key="n" class="home__case-item">
+                <CaseCard
+                  :n="n"
+                  class="home__case"
+                  :class="[`home__case--${n}`, { home__stop: n > 1 }]"
+                />
+              </li>
+            </ul>
+          </div>
+          <div class="home__dots" aria-hidden="true">
+            <span
+              v-for="n in 4"
+              :key="n"
+              class="home__dot"
+              :class="{ 'home__dot--active': activeCase === n - 1 }"
+            />
+          </div>
         </div>
       </section>
 
@@ -110,7 +201,7 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
   --_hm-sv-gap: var(--space-20); /* Figma 35:2503 @380 … 35:2209 @1920 */
   --_hm-scroll-margin: 88px; /* 12 + 64 + 12: NavBar 35:2546 @380, Н17 (как у #form); Н50 — высота навбара 80 → 64 */
 
-  --_hm-pad-top: var(--_hm-scroll-margin); /* Н51; ≥ 1024 — поле раздела */
+  --_hm-pad-top: var(--_hm-pad-y); /* поле раздела сверху (Н51: подпись «Проекты» — верх остановки) */
   --_hm-cap-h: var(--lh-h3); /* высота подписи «Проекты» = её line-height (CaptionHeading: < 768 h3, ≥ 768 h5) */
 
   min-width: 0;
@@ -144,10 +235,10 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 }
 
 .home__projects {
-  /* Н51 — владелец 24.11.2026: подпись «Проекты» в одном экране с кейсом 1. Остановка (и якорь #projects, ТЗ «Общие
-     правила» п. 9) — верх раздела, scroll-margin нет, чтобы остановки не сдвигались. На < 1024 навбар во весь экран,
-     при прокрутке вверх он показан — поле сверху = его зона (Н17), подпись не оказывается под ним.
-     Кейс 1 ниже на этот резерв (см. --cc-avail-h-1 в CaseCard). TODO(question): new Н51 */
+  /* Н51 (≥ 1024) — владелец 24.11.2026: подпись «Проекты» в одном экране с кейсом 1. Остановка (и якорь #projects, ТЗ
+     «Общие правила» п. 9) — верх раздела, scroll-margin нет, чтобы остановки не сдвигались; кейс 1 ниже на этот резерв
+     (см. --cc-avail-h-1 в CaseCard). На < 1024 (Н56) якорь — подпись со scroll-margin под навбар (Н17), как до Н51.
+     TODO(question): new Н51 */
   --cc-top-reserve: calc(var(--_hm-pad-top) + var(--_hm-cap-h) + var(--_hm-gap));
 
   padding: var(--_hm-pad-top) var(--_hm-pad-x) var(--_hm-pad-y);
@@ -155,12 +246,6 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 
 .home__services {
   padding: var(--_hm-sv-pad-y) var(--_hm-sv-pad-x);
-}
-
-.home__cases {
-  display: flex;
-  flex-direction: column;
-  gap: var(--_hm-cases-gap);
 }
 
 .home__services-list {
@@ -183,7 +268,6 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 @media (min-width: 1024px) {
   .home {
     --_hm-scroll-margin: 94px; /* 13 + 68 + 13: NavBar 2064:1472 @1024, Н17 */
-    --_hm-pad-top: var(--_hm-pad-y); /* Н51: на ≥ 1024 навбар — плашка по центру, подпись справа не под ним */
     --_hm-menu-height: 93px; /* Figma 2064:1424 @1024: фиксированная, содержимое по центру */
     --_hm-logo-w: 151.191px; /* Figma 2064:1425 @1024 (RU) */
     --_hm-logo-w-en: 152.6px; /* Figma 2066:1740 @1024 (EN) */
@@ -240,70 +324,96 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
     --_hm-logo-w-en: 218px; /* Figma 51:13658 @1920 (EN) */
   }
 }
-/* ---------- Н51 — владелец 24.11.2026: каждый раздел главной — один экран, на всех ширинах ----------
-   Остановки scroll snap — разделы (.home__stop); высота экрана = высота окна, с учётом zoom на ≥ 1024 (Н50).
-   Раздел выше окна (раскрытый блок услуг, CTA в низком окне) не запирает прокрутку: snap area больше окна — внутри
-   прокручивается свободно. Футер — остановка по низу страницы. TODO(question): new Н51 */
-.home {
-  --_hm-screen-h: 100vh; /* Н51: экран = окно */
-}
+/* ---------- Н56 — владелец 24.11.2026: на < 1024 (телефон и 768) разделы по содержимому, без scroll snap и высоты окна;
+   «Проекты» — горизонтальная карусель. Н51 остаётся для ≥ 1024 (блок ниже). Нужно подтверждение дизайнера.
+   Высоты разделов — как во фреймах 380 / 768 (hero — свой --_hero-height в HeroGif, перебивка — паддинги Typing). TODO(question): new Н56 */
+@media (max-width: 1023px) {
+  .home__projects {
+    scroll-margin-top: var(--_hm-scroll-margin); /* ТЗ «Общие правила» п. 9, Н17 */
+  }
 
-@supports (height: 100svh) {
-  .home {
-    --_hm-screen-h: 100svh;
+  .home__carousel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--_hm-cases-gap); /* зазор «карточка → индикатор» = зазор между карточками, Figma 35:2474 @380 / 2064:1543 @768 */
+    min-width: 0;
+  }
+
+  /* лента на всю ширину экрана: поля раздела — внутри (padding + scroll-padding), край следующей карточки виден */
+  .home__cases {
+    position: relative;
+    margin-inline: calc(-1 * var(--_hm-pad-x));
+    padding-inline: var(--_hm-pad-x);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-padding-inline: var(--_hm-pad-x);
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .home__cases::-webkit-scrollbar {
+    display: none;
+  }
+
+  .home__track {
+    display: flex;
+    gap: var(--_hm-cases-gap); /* 20 / 29 — Figma 35:2474 @380 / 2064:1543 @768 */
+    align-items: stretch; /* все карточки одной высоты — по самой высокой */
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .home__case-item {
+    display: flex;
+    flex: 0 0 var(--_hm-card-w);
+    min-width: 0;
+    scroll-snap-align: start;
+  }
+
+  .home__case-item > :deep(.case-card) {
+    flex: 1 1 auto;
+  }
+
+  .home__dots {
+    display: flex;
+    gap: var(--space-10);
+    justify-content: center;
+  }
+
+  .home__dot {
+    width: var(--space-10);
+    height: var(--space-10);
+    border-radius: 50%;
+    background: var(--color-gray-300);
+    transition: background-color 300ms ease-out;
+  }
+
+  .home__dot--active {
+    background: var(--color-blue-500);
   }
 }
 
-.home__stop {
-  scroll-snap-align: start;
+@media (prefers-reduced-motion: reduce) {
+  .home__dot {
+    transition: none;
+  }
 }
 
-.home__footer {
-  scroll-snap-align: end;
+.home {
+  --_hm-card-w: 85%; /* Н56: доля ширины ряда (ширина экрана − поля); виден край следующей карточки, нет в Figma */
 }
 
-/* hero: на < 1024 высота по окну (на ≥ 1024 уже по окну и не ниже содержимого, Н47) */
-.home .home__hero :deep(.hero-gif) {
-  min-height: var(--_hm-screen-h);
+@media (min-width: 768px) {
+  .home {
+    --_hm-card-w: 65%; /* Н56: на 768 карточка уже, виден край следующей; нет в Figma */
+  }
 }
 
-.home__services {
-  justify-content: center; /* Н51: «Услуги» — экран, содержимое по центру; раскрытый блок может сделать раздел выше окна */
-  min-height: var(--_hm-screen-h);
-}
-
-/* форма — экран: футер перекрывает низ CTA на --space-overlap, поэтому высота CTA = экран + перекрытие */
-.home__cta {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: calc(var(--_hm-screen-h) - var(--space-overlap));
-}
-
-.home__cta :deep(.contacts-cta__inner) {
-  width: 100%;
-}
-
-.home__typing-wrap {
-  position: relative;
-}
-
-.home__typing {
-  display: flex;
-  flex-direction: column;
-  justify-content: center; /* Н51: перебивка — экран, текст по центру */
-  min-height: var(--_hm-screen-h);
-}
-
-/* кейс 1: остановка — верх раздела «Проекты» (подпись + кейс 1 в одном экране, см. --cc-avail-h-1 в CaseCard) */
-.home__cases {
-  gap: 0; /* кейсы — экраны со своими вертикальными полями (CaseCard) */
-}
-
-.home__case--1 {
-  margin-bottom: var(--space-24); /* поле снизу, как у остальных кейсов, Н51 */
-}
-
+/* ---------- Н51 — владелец 24.11.2026: на ≥ 1024 каждый раздел главной — один экран (scroll snap по вертикали) ----------
+   Остановки scroll snap — разделы (.home__stop); высота экрана = высота окна, с учётом zoom (Н50).
+   Раздел выше окна (раскрытый блок услуг, CTA в низком окне) не запирает прокрутку: snap area больше окна — внутри
+   прокручивается свободно. Футер — остановка по низу страницы. TODO(question): new Н51 */
 @media (prefers-reduced-motion: reduce) {
   html.is-snap-home {
     scroll-behavior: auto; /* snap остаётся, плавности нет */
@@ -311,6 +421,69 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 }
 
 @media (min-width: 1024px) {
+  .home {
+    --_hm-screen-h: 100vh;
+  }
+
+  @supports (height: 100svh) {
+    .home {
+      --_hm-screen-h: 100svh;
+    }
+  }
+
+  .home__stop {
+    scroll-snap-align: start;
+  }
+
+  .home__footer {
+    scroll-snap-align: end;
+  }
+
+  /* лента кейсов на десктопе — колонка карточек (Н51), обёртки карусели в раскладке не участвуют */
+  .home__carousel,
+  .home__track,
+  .home__case-item {
+    display: contents;
+  }
+
+  .home__dots {
+    display: none;
+  }
+
+  .home__cases {
+    display: flex;
+    flex-direction: column;
+    gap: 0; /* кейсы — экраны со своими вертикальными полями (CaseCard) */
+  }
+
+  .home__services {
+    justify-content: center; /* Н51: «Услуги» — экран, содержимое по центру; раскрытый блок может сделать раздел выше окна */
+    min-height: var(--_hm-screen-h);
+  }
+
+  /* форма — экран: футер перекрывает низ CTA на --space-overlap, поэтому высота CTA = экран + перекрытие */
+  .home__cta {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: calc(var(--_hm-screen-h) - var(--space-overlap));
+  }
+
+  .home__cta :deep(.contacts-cta__inner) {
+    width: 100%;
+  }
+
+  .home__typing {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Н51: перебивка — экран, текст по центру */
+    min-height: var(--_hm-screen-h);
+  }
+
+  .home__case--1 {
+    margin-bottom: var(--space-48); /* поле снизу, Н51 */
+  }
+
   .home .home__hero :deep(.hero-gif) {
     min-height: min-content;
   }
@@ -338,10 +511,10 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
       --_hm-screen-h: calc(100svh / var(--site-zoom));
     }
   }
+}
 
-  .home__case--1 {
-    margin-bottom: var(--space-48);
-  }
+.home__typing-wrap {
+  position: relative;
 }
 
 /* ---------- Н54 — владелец 24.11.2026: небольшие каракули в пустых местах экранов (всего 4: hero, перебивка × 2, «Услуги») ----------
@@ -390,16 +563,18 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
     --doodle-size: 80px; /* Н54, нет в Figma; 768 */
   }
 
-  .home__doodle--typing-b {
-    display: block;
-    top: 22%;
-    right: 22%;
-  }
 }
 
 @media (min-width: 1024px) {
   .home {
     --doodle-size: 96px; /* Н54, нет в Figma; 1024 */
+  }
+
+  /* Н56: на < 1024 перебивка по содержимому — вторая каракуля попадала на текст, остаётся одна (стрелка) */
+  .home__doodle--typing-b {
+    display: block;
+    top: 22%;
+    right: 22%;
   }
 
   .home__doodle--hero {
@@ -436,8 +611,11 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 </style>
 
 <style>
-/* Н51: scroll snap — на корне прокрутки главной (класс ставит страница, useHead); на других страницах класса нет */
-html.is-snap-home {
-  scroll-snap-type: y mandatory;
+/* Н51: scroll snap — на корне прокрутки главной (класс ставит страница, useHead); на других страницах класса нет.
+   Н56: только на ≥ 1024, на < 1024 разделы по содержимому */
+@media (min-width: 1024px) {
+  html.is-snap-home {
+    scroll-snap-type: y mandatory;
+  }
 }
 </style>

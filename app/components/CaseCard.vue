@@ -75,12 +75,6 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   --cc-feat-pad-bottom: var(--space-28); /* Figma 35:2475 @380: 303 − (247 + 40) = 16; Н24 */
   --cc-feat-gap: 40px; /* Figma 35:2475 @380: фото (низ 207) → заголовок (247); Н24 */
 
-  /* Н51 — владелец 24.11.2026: каждый кейс — экран окна на всех ширинах. Поле кейса сверху и снизу = Spacing/24
-     (как отступ раздела на 380); на ≥ 1024 — свои значения ниже. TODO(question): new Н51 */
-  --cc-pad-y: var(--space-24);
-  --cc-screen-h: 100vh;
-  --cc-avail-h: calc(100vh - 2 * var(--cc-pad-y));
-
   position: relative;
   box-sizing: border-box;
   display: flex;
@@ -91,36 +85,14 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   text-decoration: none;
 }
 
-@supports (height: 100svh) {
-  .case-card {
-    --cc-screen-h: 100svh;
-    --cc-avail-h: calc(100svh - 2 * var(--cc-pad-y));
-  }
-}
-
-/* < 1024: карточка занимает экран, фото забирает всё свободное место (растёт или уменьшается), текст и год — как есть */
-.case-card:not(.case-card--1) {
-  min-height: var(--cc-screen-h);
-  padding-block: var(--cc-pad-y);
-}
-
-/* Н51 — владелец 24.11.2026: подпись «Проекты» в одном экране с кейсом 1. Остановка — верх раздела, поэтому кейс 1
-   ниже на --cc-top-reserve (поле раздела + подпись + зазор; задаёт страница) и на поле снизу; без резерва — как остальные. */
+/* < 1024 (Н56): карточка по содержимому, фото в пропорциях рамки Figma своей ширины; в карусели главной все
+   карточки ряда растягиваются до самой высокой (страница). Н51 — только ≥ 1024, блок ниже. */
 .case-card--1 {
-  --cc-avail-h-1: calc(var(--cc-screen-h) - var(--cc-pad-y) - var(--cc-top-reserve, var(--cc-pad-y)));
-
-  height: var(--cc-avail-h-1);
   gap: var(--cc-feat-gap);
   padding: var(--cc-feat-pad) var(--cc-feat-pad) var(--cc-feat-pad-bottom);
   border-radius: var(--cc-radius);
   background: var(--color-black);
   color: var(--color-extra-white);
-}
-
-.case-card .case-card__media {
-  flex: 1 1 0;
-  min-height: 0;
-  aspect-ratio: auto;
 }
 
 .case-card__text {
@@ -157,7 +129,7 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
 /* 380: тег поверх фото в правом верхнем углу (отступ 16), заголовок под фото */
 .case-card .case-card__tag--small {
   position: absolute;
-  top: calc(var(--cc-pad-y) + var(--cc-tag-inset));
+  top: var(--cc-tag-inset);
   right: var(--cc-tag-inset);
 }
 
@@ -189,6 +161,13 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
    Все размеры — числа фрейма своей ширины (без единиц) и доли ширины карточки --cc-layout (ширина Layout):
    calc(число / --cc-layout * 100%). На контрольной ширине карточка = Layout, значения равны фрейму. Н26 */
 @media (min-width: 1024px) {
+  /* Н51: на ≥ 1024 рамка фото задаётся размерами карточки (ниже), а не пропорцией рамки */
+  .case-card .case-card__media {
+    flex: 1 1 0;
+    min-height: 0;
+    aspect-ratio: auto;
+  }
+
   .case-card {
     /* Figma 2064:1431 (Layout), 2064:1432 / 2064:1437 / 2064:1444 / 2064:1451 @1024 */
     --cc-layout: 998; /* 2064:1431 */
@@ -230,7 +209,11 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     }
   }
 
+  /* Н51 — владелец 24.11.2026: подпись «Проекты» в одном экране с кейсом 1. Остановка — верх раздела, поэтому кейс 1
+     ниже на --cc-top-reserve (поле раздела + подпись + зазор; задаёт страница) и на поле снизу; без резерва — как остальные.
+     TODO(question): new Н51 */
   .case-card--1 {
+    --cc-avail-h-1: calc(var(--cc-screen-h) - var(--cc-pad-y) - var(--cc-top-reserve, var(--cc-pad-y)));
     --cc-u: calc(100cqw / var(--cc-layout));
     --cc-h: min(calc(var(--cc-feat-h) * var(--cc-u)), var(--cc-avail-h-1));
 
