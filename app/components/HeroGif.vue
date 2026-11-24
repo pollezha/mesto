@@ -1,12 +1,12 @@
 <script setup lang="ts">
-// HeroGif — hero-надпись главной (h1, Р56) с эффектом курсора: круг 240 px и гиф.
+// HeroGif — hero-надпись главной (h1, Р56) с эффектом курсора: круг 160 px (Н46) и гиф.
 // docs: «Компоненты» → «Hero» (gif 2092:3801: 7 кадров 348×330, 150 мс на кадр, по кругу — Р25);
 // ТЗ → «Главная» п. 1 и «Интерактив» (Hero-надпись · курсор); Р48; «Общие правила» п. 7.
 // Figma (надпись во фрейме «Header» экрана, RU и EN одинаково): 35:2174 @1920, 2063:1357 @1440,
 // 2063:1469 @1280, 2064:1427 @1024, 2064:1539 @768, 35:2470 @380 (EN: 51:13660, 2065:1491, 2065:1668,
 // 2066:1742, 2066:1919, 51:13708). Надпись по центру фрейма Header (по горизонтали и вертикали).
 // Эффект — только при (pointer: fine) и ≥ 1024 и без reduced motion: иначе ни круга, ни гифа в DOM,
-// слушатели не вешаются. Круг невидим сам по себе: это маска (clip-path) для чёрной копии текста.
+// слушатели не вешаются. Круг невидим сам по себе: это маска (mask-image с мягким краем, Н46) для чёрной копии текста.
 // Гиф: анимированный WebP, собран из 7 кадров 38:7680, 38:7687, 38:7694, 38:7701, 38:7714, 38:7723,
 // 38:7728 (полотно 348×330, прозрачный фон; кадры 02, 05, 07 выходят за карточку 160×217).
 
@@ -18,8 +18,14 @@ const active = ref(false)
 
 let mql: MediaQueryList | null = null
 let frame = 0
-let x = 0
+let x = 0 // цель: курсор
 let y = 0
+let gx = 0 // гиф: догоняет курсор с инерцией
+let gy = 0
+
+// Н46 — решение владельца 24.11.2026: гиф догоняет курсор, pos += (цель − pos) × k
+const GIF_FOLLOW = 0.2
+const GIF_SETTLE = 0.5 // px: ближе — считаем, что догнал, rAF останавливается
 
 function readPoint(e: PointerEvent) {
   const box = textEl.value?.getBoundingClientRect()
@@ -28,25 +34,42 @@ function readPoint(e: PointerEvent) {
   y = e.clientY - box.top
 }
 
-function paint() {
+function tick() {
   frame = 0
-  textEl.value?.style.setProperty('--hero-x', `${x}px`)
-  textEl.value?.style.setProperty('--hero-y', `${y}px`)
+  const el = textEl.value
+  if (!el) return
+  gx += (x - gx) * GIF_FOLLOW
+  gy += (y - gy) * GIF_FOLLOW
+  const done = Math.abs(x - gx) < GIF_SETTLE && Math.abs(y - gy) < GIF_SETTLE
+  if (done) {
+    gx = x
+    gy = y
+  }
+  el.style.setProperty('--hero-x', `${x}px`) // круг — без задержки
+  el.style.setProperty('--hero-y', `${y}px`)
+  el.style.setProperty('--gif-x', `${gx}px`)
+  el.style.setProperty('--gif-y', `${gy}px`)
+  if (!done) frame = requestAnimationFrame(tick)
 }
 
 function onEnter(e: PointerEvent) {
   readPoint(e)
-  paint() // сразу, чтобы появление шло из точки входа
+  gx = x // появление сразу в точке курсора, без «прилёта»
+  gy = y
+  if (frame) cancelAnimationFrame(frame)
+  tick()
   active.value = true
 }
 
 function onMove(e: PointerEvent) {
   readPoint(e)
-  if (!frame) frame = requestAnimationFrame(paint)
+  if (!frame) frame = requestAnimationFrame(tick)
 }
 
 function onLeave() {
   active.value = false
+  if (frame) cancelAnimationFrame(frame)
+  frame = 0
 }
 
 function bind(el: HTMLElement) {
@@ -119,11 +142,18 @@ onBeforeUnmount(() => {
   --_hero-height: 598px; /* Figma 35:2469 @380 */
   --_hero-text-width: 353px; /* Figma 35:2470 @380 */
 
-  /* Эффект: ТЗ «Главная» п. 1, Р48; gif 2092:3801. Не масштабируется, одинаков на всех ширинах ≥ 1024 */
-  --_hero-circle: 240px; /* ТЗ «Главная» п. 1 — диаметр круга */
-  --_hero-gif-w: 348px; /* Figma 2092:3801 */
-  --_hero-gif-h: 330px; /* Figma 2092:3801 */
-  --_hero-gif-offset: 16px; /* Р48 — правый нижний угол гифа в 16 px вверх-влево от курсора */
+  /* Эффект: ТЗ «Главная» п. 1, Р48; gif 2092:3801. Одинаков на всех ширинах ≥ 1024.
+     Н46 — решение владельца 24.11.2026: гиф ×0.4, угол карточки в 8 px от курсора (Р48 — отступ, было 16),
+     круг 160 px (было 240) с мягким краем 10 % радиуса, гиф догоняет курсор с инерцией (k в скрипте) */
+  --_hero-circle: 160px; /* Н46 — диаметр круга */
+  --_hero-circle-feather: 0.1; /* Н46 — доля радиуса под мягкий край */
+  --_hero-gif-scale: 0.4; /* подбирает владелец */
+  /* Figma 2092:3801: карточка 87,56 160×217 в полотне 348×330; поле справа 348−247=101, снизу 330−273=57 */
+  --_hero-gif-w: calc(348px * var(--_hero-gif-scale));
+  --_hero-gif-h: calc(330px * var(--_hero-gif-scale));
+  --_hero-gif-pad-r: calc(101px * var(--_hero-gif-scale));
+  --_hero-gif-pad-b: calc(57px * var(--_hero-gif-scale));
+  --_hero-gif-offset: 8px; /* Р48 — отступ, Н46: 8 px, не масштабируется */
 
   display: flex;
   align-items: center;
@@ -135,6 +165,8 @@ onBeforeUnmount(() => {
 .hero-gif__text {
   --hero-x: 0px;
   --hero-y: 0px;
+  --gif-x: 0px;
+  --gif-y: 0px;
 
   position: relative;
   width: var(--_hero-text-width);
@@ -155,7 +187,14 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   color: var(--color-black);
-  clip-path: circle(calc(var(--_hero-circle) / 2) at var(--hero-x) var(--hero-y));
+  --_ink-mask: radial-gradient(
+    circle calc(var(--_hero-circle) / 2) at var(--hero-x) var(--hero-y),
+    black calc(var(--_hero-circle) / 2 * (1 - var(--_hero-circle-feather))),
+    transparent calc(var(--_hero-circle) / 2)
+  );
+
+  -webkit-mask-image: var(--_ink-mask);
+  mask-image: var(--_ink-mask);
   opacity: 0;
   pointer-events: none;
   user-select: none;
@@ -166,7 +205,7 @@ onBeforeUnmount(() => {
   opacity: 1;
 }
 
-/* Гиф: правый нижний угол — в (курсор − 16, курсор − 16) */
+/* Гиф: правый нижний угол карточки — в (курсор − 8, курсор − 8), Р48, Н46 */
 .hero-gif__gif {
   position: absolute;
   top: 0;
@@ -179,8 +218,8 @@ onBeforeUnmount(() => {
   );
   background-size: 100% 100%;
   transform: translate(
-    calc(var(--hero-x) - var(--_hero-gif-offset) - var(--_hero-gif-w)),
-    calc(var(--hero-y) - var(--_hero-gif-offset) - var(--_hero-gif-h))
+    calc(var(--gif-x) - var(--_hero-gif-offset) - var(--_hero-gif-w) + var(--_hero-gif-pad-r)),
+    calc(var(--gif-y) - var(--_hero-gif-offset) - var(--_hero-gif-h) + var(--_hero-gif-pad-b))
   );
   opacity: 0;
   pointer-events: none;
@@ -200,28 +239,29 @@ onBeforeUnmount(() => {
 
 @media (min-width: 1024px) {
   .hero-gif {
-    --_hero-height: 768px; /* Figma 2064:1423 @1024 */
+    /* Н47 — решение владельца 24.11.2026: ≥ 1024 hero по высоте окна, но не ниже содержимого */
+    height: 100vh;
+    height: 100svh;
+    min-height: min-content;
+    /* высота hero ≥ 1024 — по окну (Н47); высоты фреймов 768/800/900/1080: 2064:1423, 2063:1465, 2063:1353, 35:2170 */
     --_hero-text-width: 790px; /* Figma 2064:1427 @1024 */
   }
 }
 
 @media (min-width: 1280px) {
   .hero-gif {
-    --_hero-height: 800px; /* Figma 2063:1465 @1280 */
     --_hero-text-width: 870px; /* Figma 2063:1469 @1280 */
   }
 }
 
 @media (min-width: 1440px) {
   .hero-gif {
-    --_hero-height: 900px; /* Figma 2063:1353 @1440 */
     --_hero-text-width: 950px; /* Figma 2063:1357 @1440 */
   }
 }
 
 @media (min-width: 1920px) {
   .hero-gif {
-    --_hero-height: 1080px; /* Figma 35:2170 @1920 */
     --_hero-text-width: 1106px; /* Figma 35:2174 @1920 */
   }
 }
