@@ -28,6 +28,9 @@ const root = ref<HTMLElement | null>(null)
 const burger = ref<HTMLButtonElement | null>(null)
 const panel = ref<HTMLElement | null>(null)
 const open = ref(props.initialOpen)
+// Н48 — решение владельца 24.11.2026: при прокрутке вниз навбар уезжает, при прокрутке вверх возвращается (заменяет «всегда на экране»).
+// Начальное состояние «виден» (SSR, пререндер, без JS).
+const hidden = ref(false)
 
 const homePath = computed(() => localePath('/'))
 // Р68: на самой главной логотип прокручивает наверх, «Проекты» — к #projects.
@@ -134,6 +137,58 @@ watch(
 
 watch(() => route.fullPath, closeMenu)
 
+// ---------- Н48: скрытие при прокрутке ----------
+const UP_THRESHOLD = 1 // px прокрутки вверх, после которых навбар возвращается
+let lastY = 0
+let accDown = 0
+let accUp = 0
+let frame = 0
+
+function zoneHeight(): number {
+  if (!root.value) return 0
+  return (Number.parseFloat(getComputedStyle(root.value).top) || 0) + root.value.offsetHeight
+}
+
+function update() {
+  frame = 0
+  if (props.staticPosition || open.value) {
+    hidden.value = false
+    lastY = window.scrollY
+    return
+  }
+  const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
+  const y = Math.min(Math.max(window.scrollY, 0), max) // «резиновая» прокрутка iOS игнорируется
+  const delta = y - lastY
+  lastY = y
+  const zone = zoneHeight()
+  if (y <= zone) {
+    hidden.value = false
+    accDown = 0
+    accUp = 0
+  } else if (delta > 0) {
+    accUp = 0
+    accDown += delta
+    if (accDown > zone) hidden.value = true
+  } else if (delta < 0) {
+    accDown = 0
+    accUp -= delta
+    if (accUp > UP_THRESHOLD) hidden.value = false
+  }
+}
+
+function onScroll() {
+  if (!frame) frame = requestAnimationFrame(update)
+}
+
+// Фокус с клавиатуры (Tab, Р46) в спрятанном навбаре — показать сразу
+function onFocusin(event: FocusEvent) {
+  const target = event.target as HTMLElement | null
+  if (target?.matches(':focus-visible')) {
+    hidden.value = false
+    accDown = 0
+  }
+}
+
 let desktopQuery: MediaQueryList | null = null
 function onDesktopChange(event: MediaQueryListEvent) {
   if (event.matches) closeMenu()
@@ -147,10 +202,19 @@ onMounted(() => {
     document.documentElement.style.overflow = 'hidden'
     document.addEventListener('keydown', onKeydown)
   }
+  if (!props.staticPosition) {
+    lastY = window.scrollY
+    window.addEventListener('scroll', onScroll, { passive: true })
+    update()
+  }
 })
 
 onBeforeUnmount(() => {
   desktopQuery?.removeEventListener('change', onDesktopChange)
+  if (import.meta.client) {
+    window.removeEventListener('scroll', onScroll)
+    if (frame) cancelAnimationFrame(frame)
+  }
   if (import.meta.client) {
     document.removeEventListener('keydown', onKeydown)
     document.documentElement.style.overflow = ''
@@ -162,7 +226,12 @@ onBeforeUnmount(() => {
   <div
     ref="root"
     class="navbar"
-    :class="{ 'navbar--open': open, 'navbar--static': staticPosition }"
+    :class="{
+      'navbar--open': open,
+      'navbar--static': staticPosition,
+      'navbar--hidden': hidden && !open && !staticPosition,
+    }"
+    @focusin="onFocusin"
   >
     <!-- Капсула Mobile (< 1024): Logo Blue слева, бургер справа -->
     <div class="navbar__bar">
@@ -244,6 +313,8 @@ onBeforeUnmount(() => {
      в кнопке во всю ширину панели на 380 и 360, RU и EN: 380 — 25/26, 360 — 23/24). Межстрочный = кегль, иконка = 1em. */
   --_nav-op-cta-fs: 23px;
   --_nav-op-cta-lh: 23px;
+  /* Вынос тени вниз = смещение + размытие из --shadow-glass (0 7px 37px, tokens.css, «Токены» → «Эффекты»); Н48 */
+  --_nav-shadow-reach: calc(7px + 37px);
   --_nav-z: 100; /* слой поверх контента (ТЗ → «Общие правила» п. 2), не из Figma */
 
   position: fixed;
@@ -251,6 +322,13 @@ onBeforeUnmount(() => {
   right: var(--_nav-side);
   left: var(--_nav-side);
   z-index: var(--_nav-z);
+  transition: transform 300ms ease-out; /* Н48, ТЗ → «Общие правила» п. 7 */
+}
+
+/* Н48: уезжает вверх на высоту зоны навбара (отступ сверху + капсула). Клик мышью фокус-кольцо не даёт,
+   поэтому :has(:focus-visible) — только навигация с клавиатуры (Р46). */
+.navbar--hidden:not(:has(:focus-visible)) {
+  transform: translateY(calc(-100% - var(--_nav-top) - var(--_nav-shadow-reach)));
 }
 
 /* Песочница: в потоке. Открытая панель — под капсулой, закрытая не занимает места. */
@@ -445,6 +523,10 @@ onBeforeUnmount(() => {
     transform: translateX(-50%);
   }
 
+  .navbar--hidden:not(:has(:focus-visible)) {
+    transform: translate(-50%, calc(-100% - var(--_nav-top) - var(--_nav-shadow-reach)));
+  }
+
   .navbar--static {
     top: auto;
     left: auto;
@@ -529,5 +611,10 @@ onBeforeUnmount(() => {
   }
 }
 
-/* prefers-reduced-motion: переходы обнуляет глобальное правило base.css (ТЗ → «Общие правила» п. 7) */
+/* prefers-reduced-motion: переходы обнуляет глобальное правило base.css; здесь явно — Н48 */
+@media (prefers-reduced-motion: reduce) {
+  .navbar {
+    transition: none;
+  }
+}
 </style>
