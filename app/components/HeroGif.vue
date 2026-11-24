@@ -6,7 +6,7 @@
 // 2063:1469 @1280, 2064:1427 @1024, 2064:1539 @768, 35:2470 @380 (EN: 51:13660, 2065:1491, 2065:1668,
 // 2066:1742, 2066:1919, 51:13708). Надпись по центру фрейма Header (по горизонтали и вертикали).
 // Эффект курсора — только при (pointer: fine) и ≥ 1024, слушатели вешаются только там. На тач и < 1024 — «автопилот» (Н64):
-// тот же гиф сам летает по надписи по замкнутой траектории (кривая Лиссажу 2:3), буквы темнеют по той же логике.
+// гифа нет (владелец 24.11.2026), невидимая точка идёт по замкнутой траектории (кривая Лиссажу 2:3), буквы темнеют вокруг неё.
 // При reduced motion на ≥ 1024 буквы темнеют сразу (без инерции), гифа нет; на тач и < 1024 — ни гифа, ни разбивки,
 // надпись чёрная (CSS ниже).
 // Гиф: анимированный WebP, собран из 7 кадров 38:7680, 38:7687, 38:7694, 38:7701, 38:7714, 38:7723,
@@ -17,7 +17,6 @@ const { t } = useI18n()
 // Н55 — решение владельца 24.11.2026: подсветка букв по близости (letters): буква темнеет тем сильнее, чем ближе к гифу.
 
 const textEl = ref<HTMLElement | null>(null)
-const gifEl = ref<HTMLElement | null>(null)
 const enabled = ref(false)
 const auto = ref(false) // Н64: автопилот на тач и < 1024
 const active = ref(false)
@@ -41,8 +40,8 @@ const GIF_SETTLE = 0.5 // px: ближе — считаем, что догнал
 const HL_RADIUS = 160 // px (локальные): подсветка спадает до нуля на этом расстоянии от гифа
 const HL_FADE = 0.12 // k затухания буквы за кадр
 const HL_SETTLE = 0.004
-// TODO(question): new Н64 — владелец 24.11.2026: автоанимация гифа и подсветки на телефоне
-const AUTO_PERIOD = 10000 // мс: полный круг траектории
+// TODO(question): new Н64 — владелец 24.11.2026: на телефоне без гифа, только подсветка
+const AUTO_PERIOD = 12000 // мс: полный круг траектории
 const AUTO_RADIUS_K = 0.3 // радиус подсветки в автопилоте — доля ширины блока надписи (~106 px @380, ~204 @768)
 let hlRadius = HL_RADIUS
 
@@ -162,8 +161,8 @@ function onLeave() {
 }
 
 // ---------- Н64: автопилот (тач и < 1024) ----------
-// Цель — точка на кривой Лиссажу 2:3 в пределах блока надписи; гиф и буквы — с той же инерцией, что у курсора.
-// В кадре — только запись transform гифа и цвета букв (рамки букв измерены заранее), чтения layout нет.
+// Цель — точка на кривой Лиссажу 2:3 в пределах блока надписи; подсветка букв — с той же инерцией, что у курсора. Гифа нет.
+// В кадре — только запись цвета букв (рамки букв измерены заранее), чтения layout нет.
 let autoFrame = 0
 let inView = false
 let pageVisible = true
@@ -180,14 +179,9 @@ function autoTick(now: number) {
     gx = x
     gy = y
     autoFresh = false
-    active.value = true // гиф появляется уже на траектории
   }
   gx += (x - gx) * GIF_FOLLOW
   gy += (y - gy) * GIF_FOLLOW
-  const g = gifEl.value
-  if (g) {
-    g.style.transform = `translate(calc(${gx}px - var(--_hero-gif-cx)), calc(${gy}px - var(--_hero-gif-cy)))`
-  }
   paintLetters(true)
   autoFrame = requestAnimationFrame(autoTick)
 }
@@ -313,7 +307,7 @@ onBeforeUnmount(() => {
     <div
       ref="textEl"
       class="hero-gif__text"
-      :class="{ 'hero-gif__text--gif': enabled && !reduced, 'hero-gif__text--auto': auto }"
+      :class="{ 'hero-gif__text--gif': enabled && !reduced && !auto, 'hero-gif__text--auto': auto }"
     >
       <h1 class="hero-gif__line" :aria-label="enabled ? t('home.hero') : undefined">
         <template v-if="enabled">
@@ -325,8 +319,7 @@ onBeforeUnmount(() => {
         <template v-else>{{ t('home.hero') }}</template>
       </h1>
       <span
-        v-if="enabled && !reduced"
-        ref="gifEl"
+        v-if="enabled && !reduced && !auto"
         class="hero-gif__gif"
         :class="{ 'hero-gif__gif--on': active }"
         aria-hidden="true"
@@ -425,7 +418,7 @@ onBeforeUnmount(() => {
   opacity: 1;
 }
 
-/* Н64: холст гифа (прозрачный) у края надписи выходил за экран и растягивал страницу вширь — обрезаем по секции */
+/* Н64: страховка от горизонтального скролла на тач и < 1024 */
 @media (max-width: 1023px), (pointer: coarse) {
   .hero-gif {
     overflow-x: clip;
