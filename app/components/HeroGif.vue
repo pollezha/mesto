@@ -18,6 +18,9 @@ const { t } = useI18n()
 type Highlight = 'circle' | 'letters' | 'words'
 const mode = ref<Highlight>('circle')
 const blue = ref(false)
+// ?hl= читаем из route.query после mount: в prod (пререндер, RU-главная) адрес до гидратации и в момент mount ещё без query,
+// роутер возвращает его чуть позже — поэтому следим за route.query.hl, а не читаем location.search один раз.
+const route = useRoute()
 const split = computed(() => mode.value !== 'circle')
 
 const textEl = ref<HTMLElement | null>(null)
@@ -58,6 +61,7 @@ let level: number[] = []
 let shown: number[] = []
 let lit: boolean[] = []
 let ro: ResizeObserver | null = null
+let stopHl: (() => void) | null = null
 
 function measure() {
   const el = textEl.value
@@ -210,27 +214,41 @@ function sync() {
   }
 }
 
-onMounted(() => {
-  const q = new URLSearchParams(window.location.search).get('hl') ?? ''
-  if (q === 'letters' || q === 'blue') mode.value = 'letters'
-  else if (q === 'words' || q === 'blue-words') mode.value = 'words'
+function applyHl(raw: unknown) {
+  const q = typeof raw === 'string' ? raw : ''
+  const next: Highlight =
+    q === 'letters' || q === 'blue' ? 'letters' : q === 'words' || q === 'blue-words' ? 'words' : 'circle'
   blue.value = q === 'blue' || q === 'blue-words'
+  if (next === mode.value) return
+  mode.value = next
+  if (!mql || !rmql) return
+  sync() // reduced motion: круг выключен, варианты — нет
+  if (split.value && textEl.value) {
+    void nextTick(() => {
+      measure()
+      if (!ro && textEl.value) {
+        ro = new ResizeObserver(() => measure())
+        ro.observe(textEl.value)
+        void document.fonts?.ready.then(measure)
+      }
+    })
+  }
+}
+
+onMounted(() => {
   mql = window.matchMedia('(pointer: fine) and (min-width: 1024px)')
   rmql = window.matchMedia('(prefers-reduced-motion: reduce)')
   mql.addEventListener('change', sync)
   rmql.addEventListener('change', sync)
   sync()
-  if (split.value && textEl.value) {
-    ro = new ResizeObserver(() => measure())
-    ro.observe(textEl.value)
-    void document.fonts?.ready.then(measure)
-  }
+  stopHl = watch(() => route.query.hl, applyHl, { immediate: true })
 })
 
 onBeforeUnmount(() => {
   mql?.removeEventListener('change', sync)
   rmql?.removeEventListener('change', sync)
   ro?.disconnect()
+  stopHl?.()
   if (textEl.value) unbind(textEl.value)
   if (frame) cancelAnimationFrame(frame)
 })
