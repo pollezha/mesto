@@ -54,12 +54,11 @@ function toItem(key: LinkKey): ContactItem {
   return { key, label: links[key].label, href: links[key].href, external: true }
 }
 
-// «Контент» → «Составы ссылок в футере». RU — один список; EN — два: Telegram, WhatsApp, почта | Behance, Medium, Instagram.
-const contactLists = computed<ContactItem[][]>(() => {
-  const keys = footerLinks[isRu.value ? 'ru' : 'en']
-  const items = keys.map((key) => toItem(key))
-  return isRu.value ? [items] : [items.slice(0, 3), items.slice(3)]
-})
+// «Контент» → «Составы ссылок в футере». Н68: и RU, и EN — один список под заголовком
+// (EN: Telegram, WhatsApp, почта, Behance, Medium, Instagram; в Figma EN две подколонки).
+const contactItems = computed<ContactItem[]>(() =>
+  footerLinks[isRu.value ? 'ru' : 'en'].map((key) => toItem(key)),
+)
 
 // «Документы»: RU — три документа, EN — Privacy Policy (ТЗ → «Маршруты»). В той же вкладке.
 const documents = computed(() =>
@@ -77,16 +76,10 @@ const documents = computed(() =>
   <footer class="footer" :class="`footer--${isRu ? 'ru' : 'en'}`">
     <div class="footer__inner">
       <div class="footer__layout">
-        <div class="footer__contacts" :class="{ 'footer__contacts--two': contactLists.length > 1 }">
+        <div class="footer__contacts">
           <p :id="contactsId" class="footer__title">{{ t('footer.contacts') }}</p>
-          <ul
-            v-for="(list, index) in contactLists"
-            :key="index"
-            class="footer__list"
-            :class="index === 0 ? 'footer__list--first' : 'footer__list--second'"
-            :aria-labelledby="index === 0 ? contactsId : undefined"
-          >
-            <li v-for="item in list" :key="item.key">
+          <ul class="footer__list" :aria-labelledby="contactsId">
+            <li v-for="item in contactItems" :key="item.key">
               <a
                 class="footer__link"
                 :href="item.href"
@@ -172,33 +165,13 @@ const documents = computed(() =>
   padding: var(--_footer-py) var(--_footer-px) 0; /* < 768: низ — зазор inner (Н57) */
 }
 
-/* Колонка «Контакты»: заголовок + один (RU) или два (EN) списка */
+/* Колонка «Контакты»: заголовок + один список (RU и EN, Н68) */
 .footer__contacts {
   flex: 0 1 auto;
   min-width: 0;
-  display: grid;
-  grid-template-columns: auto;
-  row-gap: var(--space-20); /* 8 @380 — Figma 2043:1704 @380 */
-}
-
-.footer__contacts--two {
-  /* Н57: в половине ширины два списка EN не помещаются — на < 768 один под другим, в одной колонке */
-  grid-template-columns: auto;
-}
-
-.footer__contacts .footer__title {
-  grid-column: 1 / -1;
-  grid-row: 1;
-}
-
-.footer__list--first {
-  grid-column: 1;
-  grid-row: 2;
-}
-
-.footer__list--second {
-  grid-column: 1;
-  grid-row: 3;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-20); /* 8 @380 — Figma 2043:1704 @380 */
 }
 
 .footer__docs {
@@ -335,26 +308,10 @@ const documents = computed(() =>
     min-width: 0;
   }
 
-  .footer__contacts--two {
-    grid-template-columns: auto auto;
-    justify-content: start;
-    column-gap: var(--space-64); /* Figma 8:770 / 38:13131 @1920 … @768 */
-    align-items: start;
-  }
-
-  /* EN: второй список без заголовка — с верхнего края, вровень с заголовком */
-  .footer__list--second {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-  }
-
-  .footer__contacts .footer__title {
-    grid-column: 1;
-  }
-
-  /* TODO(question): new Н68 — владелец 24.11.2026: EN-футер собран как RU: две половины, «Contacts» слева,
-     «Documents» с той же позиции, что «Документы» в RU; заголовок «Documents» вне «Контента» — на подтверждение.
-     В Figma EN (2065:1534 @1440, 51:13748 @1920) заголовка нет, документы прижаты к правому краю (8:659 @1920). */
+  /* TODO(question): new Н68 — владелец 24.11.2026: EN-футер собран как RU: две половины, «Contacts» слева
+     одной колонкой из шести ссылок, «Documents» с той же позиции, что «Документы» в RU; заголовок «Documents»
+     вне «Контента» — на подтверждение. В Figma EN (2065:1534 @1440, 51:13748 @1920): две подколонки контактов,
+     заголовка нет, документы у правого края (8:659 @1920). */
 
   .footer--ru .footer__mark {
     aspect-ratio: 1920 / 425; /* Figma 38:13057 */
