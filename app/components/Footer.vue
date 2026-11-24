@@ -153,9 +153,8 @@ const documents = computed(() =>
 .footer__inner {
   display: flex;
   flex-direction: column;
-  gap: var(
-    --space-72
-  ); /* 48 @380, 43 @768 … 72 @1920 — Figma 2141:6422 @380, 2064:1583 @768, 2063:1401 @1440 */
+  /* < 768: компактно, зазор = зазору между колонками (TODO(question): new Н57); ≥ 768 — 43 @768 … 72 @1920, Figma 2064:1583 @768, 2063:1401 @1440 */
+  gap: var(--_footer-section-gap);
   max-width: var(--container-max-width);
   margin-inline: auto;
 }
@@ -164,7 +163,7 @@ const documents = computed(() =>
   display: flex;
   flex-direction: column;
   gap: var(--_footer-section-gap);
-  padding: var(--_footer-py) var(--_footer-px);
+  padding: var(--_footer-py) var(--_footer-px) 0; /* < 768: низ — зазор inner (Н57) */
 }
 
 /* Колонка «Контакты»: заголовок + один (RU) или два (EN) списка */
@@ -250,13 +249,21 @@ const documents = computed(() =>
 }
 
 .footer__languages {
+  /* < 768: вертикальный паддинг кнопок RU/EN 12 вместо 31 (Н57) — зона нажатия остаётся ≥ 40 */
+  --languages-pad-y: var(--space-24);
+
   padding-inline: var(--_footer-px);
 }
 
-/* Вордмарк (Р69) — вектор из Figma, Gray 100 внутри файла */
+/* Вордмарк (Р69) — вектор из Figma, Gray 100 внутри файла.
+   TODO(question): new Н57 — владелец 24.11.2026: компактный футер на телефоне, логотип целиком
+   < 768: логотип целиком (без выноса за край), по ширине контента с боковыми полями и нижним полем;
+   пропорции — размеры SVG из Figma 2043:1700 (RU 412.28 × 94.91), 2043:1717 (EN 380 × 93). */
 .footer__mark {
   position: relative;
   overflow: hidden;
+  margin-inline: var(--_footer-px);
+  margin-bottom: var(--_footer-py);
 }
 
 .footer__mark::before {
@@ -268,11 +275,11 @@ const documents = computed(() =>
 
 /* RU Mobile — Figma 2043:1700 / 2043:1701 @380 */
 .footer--ru .footer__mark {
-  aspect-ratio: 380 / 87;
+  aspect-ratio: 412.28 / 94.9139;
 }
 
 .footer--ru .footer__mark::before {
-  inset: 4.34% -7.44% -13.43% -1.06%;
+  inset: 0;
   background-image: url('~/assets/images/footer-wordmark-ru-mobile.svg');
 }
 
@@ -294,7 +301,20 @@ const documents = computed(() =>
     --_footer-section-gap: 0px; /* колонки впритык: Figma 2064:1583 @768 (36 + 348 = 384) */
   }
 
+  .footer__inner {
+    gap: var(--space-72);
+  }
+
+  .footer__languages {
+    --languages-pad-y: initial; /* значение самого Languages (Figma I2064:1583;2141:6417 @768) */
+  }
+
+  .footer__mark {
+    margin: 0;
+  }
+
   .footer__layout {
+    padding-bottom: var(--_footer-py);
     flex-direction: row;
     align-items: flex-start;
   }
