@@ -28,6 +28,28 @@ const panelId = `${uid}-panel`
 
 const isOpen = ref(props.initialOpen)
 
+// Н52 — владелец 24.11.2026: длинное название переносится на вторую строку. Лишняя высота названия сверх одной
+// строки (--_extra) измеряется и добавляется к высоте шапки и блока; при одной строке равна 0 — вид не меняется.
+const rootEl = ref<HTMLElement | null>(null)
+const toggleEl = ref<HTMLElement | null>(null)
+let titleObserver: ResizeObserver | undefined
+function measureTitle() {
+  const root = rootEl.value
+  const toggle = toggleEl.value
+  if (!root || !toggle) return
+  const lh = parseFloat(getComputedStyle(toggle).lineHeight)
+  const extra = Number.isFinite(lh) ? Math.max(0, Math.round(toggle.offsetHeight - lh)) : 0
+  root.style.setProperty('--_extra', `${extra}px`)
+}
+onMounted(() => {
+  measureTitle()
+  if (typeof ResizeObserver !== 'undefined' && toggleEl.value) {
+    titleObserver = new ResizeObserver(measureTitle)
+    titleObserver.observe(toggleEl.value)
+  }
+})
+onBeforeUnmount(() => titleObserver?.disconnect())
+
 // Пункты панели (ключи словаря home.services.blocks.<type>.items.<id>), порядок как в «Контенте»
 const ITEMS: Record<ServicesBlockType, string[]> = {
   branding: ['branding', 'rebranding', 'logo', 'brandbook'],
@@ -85,7 +107,7 @@ function onDiscuss() {
 </script>
 
 <template>
-  <div class="services-block" :class="{ 'services-block--open': isOpen }">
+  <div ref="rootEl" class="services-block" :class="{ 'services-block--open': isOpen }">
     <!-- Фото-фон, alt="" (Р70); закрытое состояние — с затемнением Alpha/Black 50, раскрытое — без -->
     <div class="services-block__media" aria-hidden="true">
       <img
@@ -113,6 +135,7 @@ function onDiscuss() {
       <h3 class="services-block__title">
         <!-- Вся верхняя полоса — кнопка: ::after растянут на шапку -->
         <button
+          ref="toggleEl"
           type="button"
           class="services-block__toggle"
           :aria-expanded="isOpen ? 'true' : 'false'"
@@ -156,6 +179,7 @@ function onDiscuss() {
   --_closed-h: 70px; /* Figma 35:2505 @380 */
   --_open-h: 480px; /* Figma 35:2504 @380 */
   /* Figma I35:2504;35:7352 @380, I2064:1577;35:7352 @768: py 24 + строка Heading 5 */
+  --_extra: 0px; /* Н52: высота второй строки названия, задаёт скрипт */
   --_head-open-h: calc(48px + var(--lh-h5));
   --_head-pad-x: 16px; /* Figma 35:2505 / I35:2504;35:7352 @380 */
   --_radius: var(--radius-40); /* Radius/40 = 20 на 380, Figma 35:2504 */
@@ -170,14 +194,14 @@ function onDiscuss() {
   justify-content: space-between;
   box-sizing: border-box;
   width: 100%;
-  height: var(--_closed-h);
+  height: calc(var(--_closed-h) + var(--_extra));
   border-radius: var(--_radius);
   overflow: hidden;
   transition: height var(--_ease);
 }
 
 .services-block--open {
-  height: var(--_open-h);
+  height: calc(var(--_open-h) + var(--_extra));
 }
 
 /* Обводка фокуса на весь блок (ТЗ → «Общие правила» п. 8: у блоков услуг есть обводка, Р46) */
@@ -241,7 +265,7 @@ function onDiscuss() {
 
 /* ---------- Шапка ---------- */
 .services-block__head {
-  --_head-h: var(--_closed-h);
+  --_head-h: calc(var(--_closed-h) + var(--_extra));
 
   position: relative;
   display: flex;
@@ -257,7 +281,7 @@ function onDiscuss() {
 }
 
 .services-block--open .services-block__head {
-  --_head-h: var(--_head-open-h);
+  --_head-h: calc(var(--_head-open-h) + var(--_extra));
 }
 
 .services-block__title {
@@ -275,8 +299,10 @@ function onDiscuss() {
   background: none;
   color: var(--color-white);
   font: inherit;
+  display: block;
   text-align: left;
-  white-space: nowrap;
+  /* Н52 — владелец 24.11.2026: длинное название переносится на вторую строку */
+  white-space: normal;
   cursor: pointer;
 }
 
