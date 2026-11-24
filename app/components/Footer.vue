@@ -100,8 +100,8 @@ const documents = computed(() =>
         </div>
 
         <div class="footer__docs">
-          <p v-if="isRu" :id="docsId" class="footer__title">{{ t('footer.docs') }}</p>
-          <ul class="footer__list" :aria-labelledby="isRu ? docsId : undefined">
+          <p :id="docsId" class="footer__title">{{ t('footer.docs') }}</p>
+          <ul class="footer__list" :aria-labelledby="docsId">
             <li v-for="doc in documents" :key="doc.to">
               <NuxtLinkLocale class="footer__link" :to="doc.to">{{ doc.label }}</NuxtLinkLocale>
             </li>
@@ -352,19 +352,9 @@ const documents = computed(() =>
     grid-column: 1;
   }
 
-  /* TODO(question): new Н68 — владелец 24.11.2026: EN-футер собран как RU, документы рядом с контактами.
-     В Figma EN (2065:1534 @1440, 51:13748 @1920) документы прижаты к правому краю (8:659 @1920: items-end). */
-  .footer--en .footer__layout {
-    justify-content: flex-start;
-    gap: var(
-      --space-64
-    ); /* тот же зазор, что между колонками контактов (Figma 8:770 @1920 … @768) */
-  }
-
-  .footer--en .footer__contacts,
-  .footer--en .footer__docs {
-    flex: 0 0 auto;
-  }
+  /* TODO(question): new Н68 — владелец 24.11.2026: EN-футер собран как RU: две половины, «Contacts» слева,
+     «Documents» с той же позиции, что «Документы» в RU; заголовок «Documents» вне «Контента» — на подтверждение.
+     В Figma EN (2065:1534 @1440, 51:13748 @1920) заголовка нет, документы прижаты к правому краю (8:659 @1920). */
 
   .footer--ru .footer__mark {
     aspect-ratio: 1920 / 425; /* Figma 38:13057 */
