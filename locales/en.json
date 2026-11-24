@@ -63,6 +63,7 @@
       "carouselLabel": "Projects, swipe sideways"
     },
     "cases": {
+      "view": "View case",
       "case1": {
         "title": "Rebranding for the pharmacy chain",
         "year": "2026"

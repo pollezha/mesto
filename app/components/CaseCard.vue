@@ -14,6 +14,7 @@
 // ширины: 998 / 1250 / 1408 / 1880); на контрольных ширинах равны фрейму, между ними растут вместе с рядом.
 // На 768 и 380 — ширина карточки. Перенос в названиях — по ширине блока, ТЗ п. 6 (ручных переносов нет).
 // Н26 — решение владельца 20.11.2026: размеры карточек на промежуточных ширинах — доли ширины ряда, пропорционально.
+import ArrowIcon from '~/components/ArrowIcon.vue'
 import CaseImage from '~/components/CaseImage.vue'
 import Tag from '~/components/Tag.vue'
 
@@ -57,6 +58,12 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
       </template>
       <h3 class="case-card__title">{{ $t(`home.cases.case${n}.title`) }}</h3>
       <p class="case-card__year">{{ $t(`home.cases.case${n}.year`) }}</p>
+      <!-- TODO(question): new Н62 — владелец 24.11.2026: явный призыв «Смотреть кейс» у кейса 1 (текст и вид — на подтверждение дизайнера).
+           span, а не кнопка: вся карточка уже ссылка; текст входит в имя ссылки -->
+      <span v-if="n === 1" class="case-card__cta">
+        <span class="case-card__cta-label">{{ $t('home.cases.view') }}</span>
+        <ArrowIcon class="case-card__cta-icon" />
+      </span>
     </div>
   </component>
 </template>
@@ -120,6 +127,73 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
 
 .case-card--1 .case-card__year {
   color: var(--color-white);
+}
+
+/* Н62: призыв «Смотреть кейс» у кейса 1 — вид кнопки With Icon (Figma 2091:3514 @mobile, 2091:2923 @desktop),
+   цвета и состояния как у Button; span внутри ссылки-карточки */
+.case-card__cta {
+  --cc-cta-pad-y: 12px; /* Figma 2091:3514 */
+  --cc-cta-pad-x: 20px; /* Figma 2091:3514 */
+  --cc-cta-gap: 8px; /* Figma 2091:3514 */
+  --cc-cta-radius: var(--radius-12); /* Figma 2091:3514: 12 */
+  --cc-cta-fs: 12px; /* Figma 2091:3514: caption 2 (Mobile) */
+  --cc-cta-lh: 16px; /* Figma 2091:3514 */
+  --cc-cta-icon: 13.714px; /* Figma 2091:3516 */
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cc-cta-gap);
+  margin-top: var(--space-16);
+  padding: var(--cc-cta-pad-y) var(--cc-cta-pad-x);
+  border-radius: var(--cc-cta-radius);
+  background-color: var(--color-blue-500);
+  color: var(--color-white);
+  font-size: var(--cc-cta-fs);
+  line-height: var(--cc-cta-lh);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 300ms ease-out;
+}
+
+.case-card__cta-icon {
+  width: var(--cc-cta-icon);
+  height: var(--cc-cta-icon);
+  transition: transform 300ms ease-out;
+}
+
+.case-card--1:focus-visible .case-card__cta {
+  background-color: var(--color-blue-600);
+}
+
+.case-card--1:focus-visible .case-card__cta-icon {
+  transform: translate(2px, -2px);
+}
+
+@media (pointer: fine) {
+  .case-card--1 {
+    cursor: pointer;
+  }
+
+  .case-card--1:hover .case-card__cta {
+    background-color: var(--color-blue-600);
+  }
+
+  .case-card--1:hover .case-card__cta-icon {
+    transform: translate(2px, -2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .case-card__cta,
+  .case-card__cta-icon {
+    transition: none;
+  }
+
+  .case-card--1:hover .case-card__cta-icon,
+  .case-card--1:focus-visible .case-card__cta-icon {
+    transform: none;
+  }
 }
 
 .case-card .case-card__tag--default {
@@ -215,11 +289,15 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
      пропорции рамки. Колонка текста — остаток; если она уже --cc-min-text (34 % ширины карточки), картинка сужается и
      становится ниже, карточка «обнимает» картинку: высота = картинка + 2 отступа (без пустых полос). Текст по верху картинки. */
   .case-card--1 {
-    --cc-avail-h-1: calc(var(--cc-screen-h) - var(--cc-pad-y) - var(--cc-top-reserve, var(--cc-pad-y)));
+    --cc-avail-h-1: calc(
+      var(--cc-screen-h) - var(--cc-pad-y) - var(--cc-top-reserve, var(--cc-pad-y))
+    );
     --cc-u: calc(100cqw / var(--cc-layout));
     --cc-h: min(calc(var(--cc-feat-h) * var(--cc-u)), var(--cc-avail-h-1));
     --cc-pad: calc(var(--cc-feat-text-x) * var(--cc-u));
-    --cc-min-text: calc(34cqw); /* Н60: минимум колонки текста — доля ширины карточки (название ≤ 2 строк) */
+    --cc-min-text: calc(
+      34cqw
+    ); /* Н60: минимум колонки текста — доля ширины карточки (название ≤ 2 строк) */
     --cc-img-r: calc(var(--cc-feat-img-w) / var(--cc-feat-img-h)); /* пропорция рамки фото */
     --cc-feat-iw: min(
       calc((var(--cc-h) - 2 * var(--cc-pad)) * var(--cc-img-r)),
@@ -246,7 +324,20 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   .case-card--1 .case-card__text {
     order: 0;
     flex: 1 1 0;
-    margin: var(--cc-pad) var(--cc-pad) 0 var(--cc-pad);
+    align-self: stretch; /* Н62: призыв прижат к низу колонки */
+    margin: var(--cc-pad);
+  }
+
+  .case-card--1 .case-card__cta {
+    --cc-cta-pad-y: 0px; /* Figma 2091:2923: высота 64 задана min-height */
+    --cc-cta-pad-x: 24px; /* Figma 2091:2923 */
+    --cc-cta-radius: 20px; /* Figma 2091:2923 */
+    --cc-cta-fs: var(--fs-caption-2);
+    --cc-cta-lh: var(--lh-caption-2);
+    --cc-cta-icon: 32px; /* Figma 2091:2925 */
+
+    min-height: 64px; /* Figma 2091:2923 */
+    margin-top: auto;
   }
 
   /* Н51 — владелец 24.11.2026: каждый кейс 2–4 — экран окна. Карточка = высота окна, ряд по центру по вертикали;
