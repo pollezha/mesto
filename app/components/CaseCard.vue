@@ -157,7 +157,7 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   }
 }
 
-/* ---------- ≥ 1024: Featured — абсолютный текст в углу; Media — ряд (Media Left / Right / Wide) ----------
+/* ---------- ≥ 1024: Featured — картинка слева, текст справа (Н60); Media — ряд (Media Left / Right / Wide) ----------
    Все размеры — числа фрейма своей ширины (без единиц) и доли ширины карточки --cc-layout (ширина Layout):
    calc(число / --cc-layout * 100%). На контрольной ширине карточка = Layout, значения равны фрейму. Н26 */
 @media (min-width: 1024px) {
@@ -172,13 +172,9 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     /* Figma 2064:1431 (Layout), 2064:1432 / 2064:1437 / 2064:1444 / 2064:1451 @1024 */
     --cc-layout: 998; /* 2064:1431 */
     --cc-feat-h: 671; /* 2064:1432 */
-    --cc-feat-img-top: 127; /* 2064:1433 */
     --cc-feat-img-h: 459; /* 2064:1433, высота рамки фото (782 × 459) */
-    --cc-gap-top: 38; /* 127 − 23 − (32 + 10 + 24): низ текста → фото; 2064:1433, 2064:1434 */
-    --cc-gap-bot: 85; /* 671 − 127 − 459: фото → низ карточки; 2064:1432 */
+    --cc-feat-img-w: 782; /* 2064:1433 */
     --cc-feat-text-x: 21; /* 2064:1434 */
-    --cc-feat-text-y: 23; /* 2064:1434 */
-    --cc-feat-text-w: 622; /* 2064:1434 */
     --cc-text-w-2: 385; /* 2064:1439; EN 2066:1757 — то же */
     --cc-text-w-3: 381; /* 2064:1445 */
     /* высота рамки фото, Figma 2064:1438 / 2064:1449 / 2064:1456 @1024 (как --case-image-ratio в CaseImage) */
@@ -211,58 +207,46 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
 
   /* Н51 — владелец 24.11.2026: подпись «Проекты» в одном экране с кейсом 1. Остановка — верх раздела, поэтому кейс 1
      ниже на --cc-top-reserve (поле раздела + подпись + зазор; задаёт страница) и на поле снизу; без резерва — как остальные.
+     Высота карточки не больше высоты фрейма Featured своей ширины (доля ряда).
      TODO(question): new Н51 */
+  /* TODO(question): new Н60 — владелец 24.11.2026: кейс 1 на ≥ 1024 — картинка слева, текст справа (вариант 3, ждёт подтверждения дизайнера)
+     Внутренний отступ --cc-pad слева / сверху / снизу / справа = отступ текста от края карточки во фрейме своей ширины
+     (--cc-feat-text-x, доля ряда). Картинка целиком (без кадрирования), высота = высота карточки − 2 отступа, ширина по
+     пропорции рамки. Колонка текста — остаток; если она уже --cc-min-text (34 % ширины карточки), картинка сужается и
+     становится ниже, карточка «обнимает» картинку: высота = картинка + 2 отступа (без пустых полос). Текст по верху картинки. */
   .case-card--1 {
     --cc-avail-h-1: calc(var(--cc-screen-h) - var(--cc-pad-y) - var(--cc-top-reserve, var(--cc-pad-y)));
     --cc-u: calc(100cqw / var(--cc-layout));
     --cc-h: min(calc(var(--cc-feat-h) * var(--cc-u)), var(--cc-avail-h-1));
+    --cc-pad: calc(var(--cc-feat-text-x) * var(--cc-u));
+    --cc-min-text: calc(34cqw); /* Н60: минимум колонки текста — доля ширины карточки (название ≤ 2 строк) */
+    --cc-img-r: calc(var(--cc-feat-img-w) / var(--cc-feat-img-h)); /* пропорция рамки фото */
+    --cc-feat-iw: min(
+      calc((var(--cc-h) - 2 * var(--cc-pad)) * var(--cc-img-r)),
+      calc(100cqw - 3 * var(--cc-pad) - var(--cc-min-text))
+    );
 
-    display: block;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0;
     container-type: inline-size;
     height: auto;
-    aspect-ratio: var(--cc-layout) / var(--cc-feat-h);
-    max-height: var(--cc-avail-h-1);
     padding: 0;
   }
 
-  /* Н47 — владелец 24.11.2026: фото кейса 1 не кадрируется; при низком окне сжимаются поля, затем фото целиком.
-     Рамка всегда в пропорциях рамки фрейма (--case-image-w : --cc-feat-img-h), по центру. Поля — зазор «низ текста →
-     фото» (--cc-gap-top) и «фото → низ карточки» (--cc-gap-bot) во фрейме своей ширины; при нехватке высоты окна
-     сначала сжимаются они (пропорционально, не меньше --space-24), потом фото (не больше рамки фрейма). Окно высокое —
-     всё как во фрейме. Высота текста = h5 + gap + txt-3 (одна строка заголовка). */
-  .case-card--1 {
-    --cc-text-h: calc(var(--lh-h5) + var(--cc-text-gap) + var(--lh-txt-3));
-    --cc-tb: calc(var(--cc-feat-text-y) * var(--cc-u) + var(--cc-text-h)); /* низ блока текста */
-    --cc-g1: calc(var(--cc-gap-top) * var(--cc-u));
-    --cc-g2: calc(var(--cc-gap-bot) * var(--cc-u));
-    --cc-pf: calc(var(--cc-feat-img-h) * var(--cc-u)); /* высота рамки во фрейме */
-    --cc-a: calc(var(--cc-h) - var(--cc-tb));
-    --cc-deficit: max(calc(var(--cc-pf) + var(--cc-g1) + var(--cc-g2) - var(--cc-a)), 0px);
-    --cc-w1: calc(var(--cc-gap-top) / (var(--cc-gap-top) + var(--cc-gap-bot)));
-    --cc-g1-eff: min(var(--cc-g1), max(var(--space-24), calc(var(--cc-g1) - var(--cc-deficit) * var(--cc-w1))));
-    --cc-g2-eff: min(
-      var(--cc-g2),
-      max(var(--space-24), calc(var(--cc-g2) - var(--cc-deficit) * (1 - var(--cc-w1))))
-    );
-    --cc-ph: max(min(var(--cc-pf), calc(var(--cc-a) - var(--cc-g1-eff) - var(--cc-g2-eff))), 0px);
-  }
-
   .case-card--1 .case-card__media {
-    position: absolute;
     flex: none;
-    aspect-ratio: auto;
-    top: calc(var(--cc-tb) + var(--cc-g1-eff));
-    left: 50%;
-    transform: translateX(-50%);
-    height: var(--cc-ph);
-    width: calc(var(--cc-ph) * var(--case-image-w) / var(--cc-feat-img-h));
+    aspect-ratio: var(--case-image-ratio);
+    width: var(--cc-feat-iw);
+    height: auto;
+    margin: var(--cc-pad) 0 var(--cc-pad) var(--cc-pad);
   }
 
   .case-card--1 .case-card__text {
-    position: absolute;
-    top: calc(var(--cc-feat-text-y) * var(--cc-u));
-    left: calc(var(--cc-feat-text-x) / var(--cc-layout) * 100%);
-    width: calc(var(--cc-feat-text-w) / var(--cc-layout) * 100%);
+    order: 0;
+    flex: 1 1 0;
+    margin: var(--cc-pad) var(--cc-pad) 0 var(--cc-pad);
   }
 
   /* Н51 — владелец 24.11.2026: каждый кейс 2–4 — экран окна. Карточка = высота окна, ряд по центру по вертикали;
@@ -343,13 +327,9 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   .case-card {
     --cc-layout: 1250; /* 2063:1473 */
     --cc-feat-h: 839; /* 2063:1474 */
-    --cc-feat-img-top: 159; /* 2063:1475 */
     --cc-feat-img-h: 574; /* 2063:1475, высота рамки фото */
-    --cc-gap-top: 54; /* 159 − 29 − (36 + 12 + 28); 2063:1475, 2063:1476 */
-    --cc-gap-bot: 106; /* 839 − 159 − 574; 2063:1474 */
+    --cc-feat-img-w: 977; /* 2063:1475 */
     --cc-feat-text-x: 27; /* 2063:1476 */
-    --cc-feat-text-y: 29; /* 2063:1476 */
-    --cc-feat-text-w: 711; /* 2063:1476 */
     --cc-text-w-2: 543; /* 2063:1481 */
     --cc-text-w-3: 476; /* 2063:1487 */
     /* высота рамки фото, Figma 2063:1480 / 2063:1492 / 2063:1494 @1280 */
@@ -376,13 +356,9 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   .case-card {
     --cc-layout: 1408; /* 2063:1361 */
     --cc-feat-h: 944; /* 2063:1362 */
-    --cc-feat-img-top: 179; /* 2063:1363 */
     --cc-feat-img-h: 646; /* 2063:1363, высота рамки фото */
-    --cc-gap-top: 63; /* 179 − 33 − (40 + 13 + 30); 2063:1363, 2063:1364 */
-    --cc-gap-bot: 119; /* 944 − 179 − 646; 2063:1362 */
+    --cc-feat-img-w: 1100; /* 2063:1363 */
     --cc-feat-text-x: 30; /* 2063:1364 */
-    --cc-feat-text-y: 33; /* 2063:1364 */
-    --cc-feat-text-w: 799; /* 2063:1364 */
     --cc-text-w-2: 627; /* 2063:1369 */
     --cc-text-w-3: 536; /* 2063:1375 */
     /* высота рамки фото, Figma 2063:1368 / 2063:1380 / 2063:1382 @1440 */
@@ -401,13 +377,9 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   .case-card {
     --cc-layout: 1880; /* 35:2178 */
     --cc-feat-h: 1258; /* 35:2179 */
-    --cc-feat-img-top: 199; /* 35:2180 */
     --cc-feat-img-h: 861; /* 35:2180, высота рамки фото */
-    --cc-gap-top: 55; /* 199 − 44 − (48 + 16 + 36); 35:2180, 35:2181 */
-    --cc-gap-bot: 198; /* 1258 − 199 − 861; 35:2179 */
+    --cc-feat-img-w: 1466; /* 35:2180 */
     --cc-feat-text-x: 40; /* 35:2181 */
-    --cc-feat-text-y: 44; /* 35:2181 */
-    --cc-feat-text-w: 977; /* 35:2181 */
     --cc-text-w-2: 721; /* 35:2186 */
     --cc-text-w-3: 714; /* 35:2190 */
     /* высота рамки фото, Figma 35:2185 / 35:2195 / 35:2197 @1920 */

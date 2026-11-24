@@ -77,6 +77,21 @@ const tabletFiles: Record<number, Array<[number, boolean, number]>> = {
 function wSet(table: Record<number, Array<[number, boolean, number]>>): string {
   return (table[props.n] ?? []).map(([w, x2, px]) => `${url(w, x2)} ${px}w`).join(', ')
 }
+// Н60: кейс 1 на ≥ 1024 — рамка по высоте окна (CaseCard), поэтому растр выбирается по w-дескрипторам и sizes. Файлы —
+// кадры 782 / 977 / 1100 / 1466 px (1x) и их @2x. Ширина рамки на экране ≈ min((высота окна − 130) × 1.703, 70 % ширины окна).
+const featFiles: Array<[number, boolean, number]> = [
+  [1024, false, 782],
+  [1024, true, 1564],
+  [1280, false, 977],
+  [1280, true, 1954],
+  [1440, false, 1100],
+  [1440, true, 2200],
+  [1920, false, 1466],
+  [1920, true, 2932],
+]
+const featSet = computed(() =>
+  featFiles.map(([w, x2, px]) => `${url(w, x2)} ${px}w`).join(', '),
+)
 const phoneSet = computed(() => wSet(phoneFiles))
 const tabletSet = computed(() => wSet(tabletFiles))
 </script>
@@ -96,6 +111,13 @@ const tabletSet = computed(() => wSet(tabletFiles))
         media="(max-width: 1023px)"
         :srcset="tabletSet"
         sizes="65vw"
+        type="image/webp"
+      />
+      <source
+        v-if="!framed && n === 1"
+        media="(min-width: 1024px)"
+        :srcset="featSet"
+        sizes="min(calc((100vh - 130px) * 1.703), 70vw)"
         type="image/webp"
       />
       <source media="(min-width: 1920px)" :srcset="srcset(1920)" type="image/webp" />
