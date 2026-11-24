@@ -247,7 +247,9 @@ function toggle() {
   height: calc(var(--_closed-h) + var(--_extra));
   border-radius: var(--_radius);
   overflow: hidden;
-  scroll-margin-top: var(--_vmargin); /* верх раскрытого блока у верха окна с полем (revealOpened) */
+  scroll-margin-top: var(
+    --_vmargin
+  ); /* верх раскрытого блока у верха окна с полем (revealOpened) */
   transition: height var(--_ease);
 }
 
@@ -286,6 +288,9 @@ function toggle() {
   width: 100%;
   height: calc(var(--_open-eff) + var(--_extra));
   z-index: -1;
+  /* Н59: фото на своём слое — Safari не перерисовывает его при росте высоты блока (мерцание) */
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .services-block__img {
@@ -342,6 +347,23 @@ function toggle() {
   /* Н52 — владелец 24.11.2026: длинное название переносится на вторую строку */
   white-space: normal;
   cursor: pointer;
+  /* Н59 — владелец 24.11.2026: без подсветки тапа и мерцания при раскрытии на телефоне */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.services-block__head,
+.services-block__toggle::after {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.services-block__toggle:focus:not(:focus-visible) {
+  outline: none; /* фокус от тапа/мыши не рисуется; клавиатурный :focus-visible остаётся заметным */
 }
 
 .services-block__toggle::after {
