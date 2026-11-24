@@ -104,13 +104,17 @@ function onKeydown(event: KeyboardEvent) {
   }
 }
 
-// Фон не скроллится, пока меню открыто («Интерактив»); в песочнице (staticPosition) скролл не блокируется
+// Н67 — владелец 24.11.2026: при открытом меню страница прокручивается, меню закрывается после прокрутки
+// (отменяет ТЗ «Интерактив»: фон не скроллится). overflow у html меню не трогает.
+const CLOSE_SCROLL_PX = 48 // прокрутка пользователя от позиции открытия, после которой меню закрывается (= --space-48)
+const INTENT_MS = 1500 // сколько после wheel / touch / клавиши прокрутку считаем пользовательской (инерция тача)
+let openY = 0
 watch(
   open,
   (value) => {
     if (!import.meta.client) return
-    if (!props.staticPosition) document.documentElement.style.overflow = value ? 'hidden' : ''
     if (value) {
+      openY = window.scrollY
       document.addEventListener('keydown', onKeydown)
     } else {
       document.removeEventListener('keydown', onKeydown)
@@ -183,6 +187,14 @@ function zoneHeight(): number {
 function update() {
   frame = 0
   if (props.staticPosition || open.value) {
+    // Н67: только пользовательская прокрутка (wheel / touch / клавиши), не авто-подстройки браузера
+    if (
+      open.value &&
+      performance.now() - lastIntentAt < INTENT_MS &&
+      Math.abs(window.scrollY - openY) > CLOSE_SCROLL_PX
+    ) {
+      closeMenu()
+    }
     hidden.value = false
     lastY = window.scrollY
     return
@@ -232,11 +244,11 @@ function onDesktopChange(event: MediaQueryListEvent) {
 }
 
 onMounted(() => {
-  // На ≥ 1024 мобильного меню нет — закрыть и вернуть скролл
+  // На ≥ 1024 мобильного меню нет — закрыть
   desktopQuery = window.matchMedia('(min-width: 1024px)')
   desktopQuery.addEventListener('change', onDesktopChange)
   if (open.value && !props.staticPosition) {
-    document.documentElement.style.overflow = 'hidden'
+    openY = window.scrollY
     document.addEventListener('keydown', onKeydown)
   }
   if (!props.staticPosition) {
@@ -269,7 +281,6 @@ onBeforeUnmount(() => {
   }
   if (import.meta.client) {
     document.removeEventListener('keydown', onKeydown)
-    document.documentElement.style.overflow = ''
   }
 })
 </script>
