@@ -173,16 +173,18 @@ onBeforeUnmount(() => {
   --gif-y: 0px;
 
   position: relative;
-  width: var(--_hero-text-width);
+  /* Н50 — владелец 24.11.2026: надпись hero без уменьшения (ширина блока в окне = как во фрейме) */
+  width: calc(var(--_hero-text-width) / var(--site-zoom));
   max-width: 100%;
 }
 
 .hero-gif__line {
   margin: 0;
   color: var(--color-gray-500);
-  font-size: var(--fs-h3);
+  /* Н50 — владелец 24.11.2026: надпись hero без уменьшения (кегль и интервал в окне = как во фрейме) */
+  font-size: calc(var(--fs-h3) / var(--site-zoom));
   font-weight: var(--fw-medium);
-  line-height: var(--lh-h3);
+  line-height: calc(var(--lh-h3) / var(--site-zoom));
   text-align: center;
 }
 
