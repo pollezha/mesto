@@ -30,15 +30,24 @@ const tag = computed(() => `h${props.level}`)
 
 <style scoped>
 .caption-heading {
-  /* Стиль Heading 5, цвет Achromatic/Black — Figma 14:1471 и инстансы на экранах, все ширины */
+  /* Стиль Heading 5 (на <768 — H3, Н53), цвет Achromatic/Black — Figma 14:1471 и инстансы на экранах, все ширины */
   margin: 0;
   /* Отступ справа фрейма «heading» — без привязки, на каждой ширине равен Spacing/40:
      40 @1920, 32 @1440, 30 @1280, 26 @1024, 24 @768, 10 @380 (кадры выше) */
   padding-right: var(--space-40);
   color: var(--color-black);
-  font-size: var(--fs-h5);
-  line-height: var(--lh-h5);
+  /* Н53 — владелец 24.11.2026: подписи разделов на телефоне крупнее — 28/32 */
+  font-size: var(--fs-h3);
+  line-height: var(--lh-h3);
   font-weight: var(--fw-medium);
   text-align: right;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .caption-heading {
+    font-size: var(--fs-h5);
+    line-height: var(--lh-h5);
+  }
 }
 </style>
