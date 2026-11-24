@@ -217,7 +217,11 @@ function sync() {
 function applyHl(raw: unknown) {
   const q = typeof raw === 'string' ? raw : ''
   const next: Highlight =
-    q === 'letters' || q === 'blue' ? 'letters' : q === 'words' || q === 'blue-words' ? 'words' : 'circle'
+    q === 'letters' || q === 'blue'
+      ? 'letters'
+      : q === 'words' || q === 'blue-words'
+        ? 'words'
+        : 'circle'
   blue.value = q === 'blue' || q === 'blue-words'
   if (next === mode.value) return
   mode.value = next
@@ -256,7 +260,8 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="hero-gif">
-    <div ref="textEl" class="hero-gif__text" :class="{ 'hero-gif__text--blue': blue }">
+    <div ref="textEl" class="hero-gif__text" :class="{ 'hero-gif__text--blue': blue, 'hero-gif__text--gif': enabled && (!reduced || !split) }"
+    >
       <h1 class="hero-gif__line" :aria-label="enabled && split ? t('home.hero') : undefined">
         <template v-if="enabled && split">
           <template v-for="(p, i) in parts" :key="i">
@@ -307,11 +312,9 @@ onBeforeUnmount(() => {
   /* Figma 2092:3801: карточка 87,56 160×217 в полотне 348×330; поле справа 348−247=101, снизу 330−273=57 */
   --_hero-gif-w: calc(348px * var(--_hero-gif-scale));
   --_hero-gif-h: calc(330px * var(--_hero-gif-scale));
-  --_hero-gif-pad-r: calc(101px * var(--_hero-gif-scale));
-  --_hero-gif-pad-b: calc(57px * var(--_hero-gif-scale));
-  --_hero-gif-offset: calc(
-    8px / var(--site-zoom)
-  ); /* Р48 — отступ, Н46: 8 px, не масштабируется; Н50: 8 px в окне при zoom */
+  /* владелец 24.11.2026: гиф на месте курсора, курсор скрыт (Н46); центр видимой карточки 160×217 в полотне 348×330 (Figma 2092:3801): (87+80, 56+108.5) */
+  --_hero-gif-cx: calc(167px * var(--_hero-gif-scale));
+  --_hero-gif-cy: calc(164.5px * var(--_hero-gif-scale));
 
   display: flex;
   align-items: center;
@@ -331,6 +334,16 @@ onBeforeUnmount(() => {
   /* Н50 — владелец 24.11.2026: надпись hero без уменьшения (ширина блока в окне = как во фрейме) */
   width: calc(var(--_hero-text-width) / var(--site-zoom));
   max-width: 100%;
+
+  /* владелец 24.11.2026: надпись hero не выделяется (Н55) */
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.hero-gif__text--gif {
+  cursor: none; /* владелец 24.11.2026: гиф на месте курсора, курсор скрыт (Н46); только над надписью, пока эффект работает */
 }
 
 .hero-gif__text--blue {
@@ -380,7 +393,7 @@ onBeforeUnmount(() => {
   opacity: 1;
 }
 
-/* Гиф: правый нижний угол карточки — в (курсор − 8, курсор − 8), Р48, Н46 */
+/* Гиф: центр карточки — в точке курсора (с инерцией), владелец 24.11.2026, Н46 */
 .hero-gif__gif {
   position: absolute;
   top: 0;
@@ -393,8 +406,8 @@ onBeforeUnmount(() => {
   );
   background-size: 100% 100%;
   transform: translate(
-    calc(var(--gif-x) - var(--_hero-gif-offset) - var(--_hero-gif-w) + var(--_hero-gif-pad-r)),
-    calc(var(--gif-y) - var(--_hero-gif-offset) - var(--_hero-gif-h) + var(--_hero-gif-pad-b))
+    calc(var(--gif-x) - var(--_hero-gif-cx)),
+    calc(var(--gif-y) - var(--_hero-gif-cy))
   );
   opacity: 0;
   pointer-events: none;
