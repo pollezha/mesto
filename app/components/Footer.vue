@@ -352,14 +352,18 @@ const documents = computed(() =>
     grid-column: 1;
   }
 
-  /* EN: колонка документов выровнена вправо (Figma 8:659 @1920: items-end, text-right) */
-  .footer--en .footer__docs {
-    align-items: flex-end;
-    text-align: right;
+  /* TODO(question): new Н68 — владелец 24.11.2026: EN-футер собран как RU, документы рядом с контактами.
+     В Figma EN (2065:1534 @1440, 51:13748 @1920) документы прижаты к правому краю (8:659 @1920: items-end). */
+  .footer--en .footer__layout {
+    justify-content: flex-start;
+    gap: var(
+      --space-64
+    ); /* тот же зазор, что между колонками контактов (Figma 8:770 @1920 … @768) */
   }
 
-  .footer--en .footer__docs .footer__list {
-    align-items: flex-end;
+  .footer--en .footer__contacts,
+  .footer--en .footer__docs {
+    flex: 0 0 auto;
   }
 
   .footer--ru .footer__mark {
