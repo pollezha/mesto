@@ -236,15 +236,16 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     padding: 0;
   }
 
-  /* фото по центру; верх — как во фрейме, низ пропорционален высоте; рамка не обрезается и не растягивается */
+  /* Н47 — владелец 24.11.2026: фото кейса 1 не сужается, кадрируется по высоте. Рамка по центру: ширина и верх как
+     во фрейме, высота — по окну (меньше фрейма, если окно низкое); картинка внутри — cover по центру (CaseImage) */
   .case-card--1 .case-card__media {
     position: absolute;
     flex: none;
-    aspect-ratio: var(--case-image-ratio);
+    aspect-ratio: auto;
     top: calc(var(--cc-feat-img-top) * var(--cc-u));
     left: 50%;
     transform: translateX(-50%);
-    width: auto;
+    width: calc(var(--case-image-w) / var(--cc-layout) * 100%);
     height: max(
       calc(
         var(--cc-h) * (1 - (var(--cc-feat-h) - var(--cc-feat-img-top) - var(--cc-feat-img-h)) / var(--cc-feat-h)) -
@@ -289,11 +290,11 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   }
 
   /* фото — рамка своей ширины фрейма как доля ряда (число --case-image-w, пропорции и радиус — в CaseImage);
-     при нехватке высоты окна ширина берётся из высоты по пропорции рамки (width: auto) */
+     при нехватке высоты окна рамка укорачивается, картинка кадрируется (Н47: фото не сужается) */
   .case-card:not(.case-card--1) .case-card__media {
     flex: none;
-    aspect-ratio: var(--case-image-ratio);
-    width: auto;
+    aspect-ratio: auto;
+    width: calc(var(--case-image-w) / var(--cc-layout) * 100%);
     height: var(--cc-photo-h);
   }
 
