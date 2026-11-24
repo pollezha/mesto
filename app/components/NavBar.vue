@@ -143,6 +143,36 @@ let lastY = 0
 let accDown = 0
 let accUp = 0
 let frame = 0
+// Н48 — владелец 24.11.2026: навбар не появляется от клика и раскрытия блоков. Клик или смена высоты контента
+// (аккордеон, картинки) запускают подстройку scroll snap / ограничение прокрутки браузером — это сдвиг scrollY вверх
+// без участия пользователя. Пока «окно тишины» открыто, сдвиги не считаются прокруткой; wheel / touch / клавиши
+// прокрутки закрывают окно сразу (пользователь снова ведёт прокрутку сам).
+const QUIET_MS = 700
+let quietUntil = 0
+let lastIntentAt = 0
+let lastIntentDir = 0 // -1 вверх, 1 вниз, 0 неизвестно (touch)
+let resizeObserver: ResizeObserver | null = null
+const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ', 'Spacebar'])
+
+function openQuiet() {
+  quietUntil = performance.now() + QUIET_MS
+}
+function onUserScrollIntent(dir = 0) {
+  quietUntil = 0
+  lastIntentAt = performance.now()
+  lastIntentDir = dir
+}
+function onWheel(event: WheelEvent) {
+  onUserScrollIntent(Math.sign(event.deltaY))
+}
+function onTouch() {
+  onUserScrollIntent()
+}
+function onScrollKey(event: KeyboardEvent) {
+  if (SCROLL_KEYS.has(event.key)) {
+    onUserScrollIntent(['ArrowUp', 'PageUp', 'Home'].includes(event.key) ? -1 : 1)
+  }
+}
 
 function zoneHeight(): number {
   if (!root.value) return 0
@@ -166,6 +196,12 @@ function update() {
     hidden.value = false
     accDown = 0
     accUp = 0
+  } else if (performance.now() < quietUntil) {
+    // сдвиг не от пользователя: положение запоминаем, состояние навбара не меняем
+    accDown = 0
+    accUp = 0
+  } else if (delta > 0 && lastIntentDir < 0 && performance.now() - lastIntentAt < 1500) {
+    // пользователь только что крутил вверх, а страница идёт вниз — это snap возвращает раздел на остановку: навбар не прячем
   } else if (delta > 0) {
     accUp = 0
     accDown += delta
@@ -206,6 +242,15 @@ onMounted(() => {
   if (!props.staticPosition) {
     lastY = window.scrollY
     window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('click', openQuiet, true)
+    window.addEventListener('wheel', onWheel, { passive: true })
+    window.addEventListener('touchstart', onTouch, { passive: true })
+    window.addEventListener('touchmove', onTouch, { passive: true })
+    window.addEventListener('keydown', onScrollKey)
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(openQuiet)
+      resizeObserver.observe(document.body)
+    }
     update()
   }
 })
@@ -214,6 +259,12 @@ onBeforeUnmount(() => {
   desktopQuery?.removeEventListener('change', onDesktopChange)
   if (import.meta.client) {
     window.removeEventListener('scroll', onScroll)
+    window.removeEventListener('click', openQuiet, true)
+    window.removeEventListener('wheel', onWheel)
+    window.removeEventListener('touchstart', onTouch)
+    window.removeEventListener('touchmove', onTouch)
+    window.removeEventListener('keydown', onScrollKey)
+    resizeObserver?.disconnect()
     if (frame) cancelAnimationFrame(frame)
   }
   if (import.meta.client) {
