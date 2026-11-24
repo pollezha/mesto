@@ -1,41 +1,26 @@
 <script setup lang="ts">
-// HeroGif — hero-надпись главной (h1, Р56) с эффектом курсора: круг 160 px (Н46) и гиф.
+// HeroGif — hero-надпись главной (h1, Р56) с эффектом курсора: гиф на месте курсора (Н46) и подсветка букв по близости к нему (Н55).
 // docs: «Компоненты» → «Hero» (gif 2092:3801: 7 кадров 348×330, 150 мс на кадр, по кругу — Р25);
 // ТЗ → «Главная» п. 1 и «Интерактив» (Hero-надпись · курсор); Р48; «Общие правила» п. 7.
 // Figma (надпись во фрейме «Header» экрана, RU и EN одинаково): 35:2174 @1920, 2063:1357 @1440,
 // 2063:1469 @1280, 2064:1427 @1024, 2064:1539 @768, 35:2470 @380 (EN: 51:13660, 2065:1491, 2065:1668,
 // 2066:1742, 2066:1919, 51:13708). Надпись по центру фрейма Header (по горизонтали и вертикали).
-// Эффект — только при (pointer: fine) и ≥ 1024 и без reduced motion: иначе ни круга, ни гифа в DOM,
-// слушатели не вешаются. Круг невидим сам по себе: это маска (mask-image с мягким краем, Н46) для чёрной копии текста.
+// Эффект — только при (pointer: fine) и ≥ 1024: иначе ни гифа, ни разбивки на буквы в DOM, слушатели не вешаются.
+// При reduced motion буквы темнеют сразу (без инерции), гифа нет.
 // Гиф: анимированный WebP, собран из 7 кадров 38:7680, 38:7687, 38:7694, 38:7701, 38:7714, 38:7723,
 // 38:7728 (полотно 348×330, прозрачный фон; кадры 02, 05, 07 выходят за карточку 160×217).
 
 const { t } = useI18n()
 
-// TODO(question): new Н55 — владелец 24.11.2026: подсветка кругом «топорная». Три варианта на выбор, временный ?hl=:
-// (нет) — круг как раньше · letters — буквы темнеют по близости к гифу · words — след из слов · blue — letters синим
-// (blue-words — то же для слов). Выбранное оставим, лишнее удалим. Центр подсветки — позиция гифа (та же инерция, GIF_FOLLOW).
-type Highlight = 'circle' | 'letters' | 'words'
-const mode = ref<Highlight>('circle')
-const blue = ref(false)
-// ?hl= читаем из route.query после mount: в prod (пререндер, RU-главная) адрес до гидратации и в момент mount ещё без query,
-// роутер возвращает его чуть позже — поэтому следим за route.query.hl, а не читаем location.search один раз.
-const route = useRoute()
-const split = computed(() => mode.value !== 'circle')
+// Н55 — решение владельца 24.11.2026: подсветка букв по близости (letters): буква темнеет тем сильнее, чем ближе к гифу.
 
 const textEl = ref<HTMLElement | null>(null)
 const enabled = ref(false)
 const active = ref(false)
 const reduced = ref(false)
 
-// Разбивка надписи: буквы (letters) или слова (words); пробелы — обычным текстом, переносы строк не меняются.
-const parts = computed(() => {
-  const text = t('home.hero')
-  if (mode.value === 'letters') {
-    return Array.from(text).map((s) => ({ s, w: s !== ' ' }))
-  }
-  return text.split(/( )/).map((s) => ({ s, w: s !== ' ' && s !== '' }))
-})
+// Разбивка надписи на буквы; пробелы — обычным текстом, переносы строк не меняются.
+const parts = computed(() => Array.from(t('home.hero')).map((s) => ({ s, w: s !== ' ' })))
 
 let mql: MediaQueryList | null = null
 let rmql: MediaQueryList | null = null
@@ -51,21 +36,18 @@ const GIF_SETTLE = 0.5 // px: ближе — считаем, что догнал
 // Н55 (владелец 24.11.2026: быстрее, радиус меньше): буквы темнеют так же быстро, как движется гиф (GIF_FOLLOW 0.3), а гаснут чуть медленнее
 const HL_RADIUS = 160 // px (локальные): подсветка спадает до нуля на этом расстоянии от гифа
 const HL_FADE = 0.12 // k затухания буквы за кадр
-const HL_WORD_REACH = 50 // px: слово «горит», если ближе этого расстояния от гифа
 const HL_SETTLE = 0.004
 
-// измеренные один раз центры букв / рамки слов (локальные координаты внутри textEl)
+// измеренные один раз рамки букв (локальные координаты внутри textEl)
 let toks: HTMLElement[] = []
 let box: { l: number; t: number; r: number; b: number }[] = []
 let level: number[] = []
 let shown: number[] = []
-let lit: boolean[] = []
 let ro: ResizeObserver | null = null
-let stopHl: (() => void) | null = null
 
 function measure() {
   const el = textEl.value
-  if (!el || !split.value) return
+  if (!el) return
   toks = Array.from(el.querySelectorAll<HTMLElement>('.hero-gif__tok'))
   const o = el.getBoundingClientRect()
   const zoom = siteZoom()
@@ -81,7 +63,6 @@ function measure() {
   if (level.length !== toks.length) {
     level = toks.map(() => 0)
     shown = toks.map(() => -1)
-    lit = toks.map(() => false)
   }
 }
 
@@ -121,25 +102,11 @@ function paintLetters(on: boolean): boolean {
       const tk = toks[i]
       if (tk) {
         tk.style.color =
-          pct === 0 ? '' : `color-mix(in srgb, var(--_hl) ${pct}%, var(--color-gray-500))`
+          pct === 0 ? '' : `color-mix(in srgb, var(--color-black) ${pct}%, var(--color-gray-500))`
       }
     }
   }
   return moving
-}
-
-function paintWords(on: boolean) {
-  for (let i = 0; i < toks.length; i++) {
-    const b = box[i]
-    if (!b) continue
-    const dx = Math.max(b.l - gx, 0, gx - b.r)
-    const dy = Math.max(b.t - gy, 0, gy - b.b)
-    const now = on && Math.hypot(dx, dy) < HL_WORD_REACH
-    if (now !== lit[i]) {
-      lit[i] = now
-      toks[i]?.classList.toggle('hero-gif__tok--lit', now)
-    }
-  }
 }
 
 function tick() {
@@ -154,13 +121,9 @@ function tick() {
     gy = y
     done = true
   }
-  el.style.setProperty('--hero-x', `${x}px`) // круг — без задержки
-  el.style.setProperty('--hero-y', `${y}px`)
   el.style.setProperty('--gif-x', `${gx}px`)
   el.style.setProperty('--gif-y', `${gy}px`)
-  let moving = false
-  if (mode.value === 'letters') moving = paintLetters(active.value)
-  else if (mode.value === 'words') paintWords(active.value)
+  const moving = paintLetters(active.value)
   if (!done || moving) frame = requestAnimationFrame(tick)
 }
 
@@ -182,7 +145,7 @@ function onLeave() {
   active.value = false
   if (frame) cancelAnimationFrame(frame)
   frame = 0
-  if (split.value) tick() // буквы плавно гаснут, слова — через CSS-transition
+  tick() // буквы плавно гаснут
 }
 
 function bind(el: HTMLElement) {
@@ -201,41 +164,22 @@ function sync() {
   const el = textEl.value
   if (!el || !mql || !rmql) return
   reduced.value = rmql.matches
-  // круг — как раньше, только без reduced motion; новые варианты работают и при нём, но без инерции (мгновенно)
-  const on = mql.matches && (!rmql.matches || split.value)
+  const on = mql.matches
   if (on && !enabled.value) {
     enabled.value = true
     bind(el)
-    if (split.value) void nextTick(measure)
+    void nextTick(() => {
+      measure()
+      if (!ro) {
+        ro = new ResizeObserver(() => measure())
+        ro.observe(el)
+        void document.fonts?.ready.then(measure)
+      }
+    })
   } else if (!on && enabled.value) {
     enabled.value = false
     active.value = false
     unbind(el)
-  }
-}
-
-function applyHl(raw: unknown) {
-  const q = typeof raw === 'string' ? raw : ''
-  const next: Highlight =
-    q === 'letters' || q === 'blue'
-      ? 'letters'
-      : q === 'words' || q === 'blue-words'
-        ? 'words'
-        : 'circle'
-  blue.value = q === 'blue' || q === 'blue-words'
-  if (next === mode.value) return
-  mode.value = next
-  if (!mql || !rmql) return
-  sync() // reduced motion: круг выключен, варианты — нет
-  if (split.value && textEl.value) {
-    void nextTick(() => {
-      measure()
-      if (!ro && textEl.value) {
-        ro = new ResizeObserver(() => measure())
-        ro.observe(textEl.value)
-        void document.fonts?.ready.then(measure)
-      }
-    })
   }
 }
 
@@ -245,14 +189,12 @@ onMounted(() => {
   mql.addEventListener('change', sync)
   rmql.addEventListener('change', sync)
   sync()
-  stopHl = watch(() => route.query.hl, applyHl, { immediate: true })
 })
 
 onBeforeUnmount(() => {
   mql?.removeEventListener('change', sync)
   rmql?.removeEventListener('change', sync)
   ro?.disconnect()
-  stopHl?.()
   if (textEl.value) unbind(textEl.value)
   if (frame) cancelAnimationFrame(frame)
 })
@@ -260,10 +202,13 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="hero-gif">
-    <div ref="textEl" class="hero-gif__text" :class="{ 'hero-gif__text--blue': blue, 'hero-gif__text--gif': enabled && (!reduced || !split) }"
+    <div
+      ref="textEl"
+      class="hero-gif__text"
+      :class="{ 'hero-gif__text--gif': enabled && !reduced }"
     >
-      <h1 class="hero-gif__line" :aria-label="enabled && split ? t('home.hero') : undefined">
-        <template v-if="enabled && split">
+      <h1 class="hero-gif__line" :aria-label="enabled ? t('home.hero') : undefined">
+        <template v-if="enabled">
           <template v-for="(p, i) in parts" :key="i">
             <span v-if="p.w" class="hero-gif__tok" aria-hidden="true">{{ p.s }}</span>
             <template v-else>{{ p.s }}</template>
@@ -271,22 +216,12 @@ onBeforeUnmount(() => {
         </template>
         <template v-else>{{ t('home.hero') }}</template>
       </h1>
-      <template v-if="enabled">
-        <div
-          v-if="!split"
-          class="hero-gif__line hero-gif__ink"
-          :class="{ 'hero-gif__ink--on': active }"
-          aria-hidden="true"
-        >
-          {{ t('home.hero') }}
-        </div>
-        <span
-          v-if="!reduced || !split"
-          class="hero-gif__gif"
-          :class="{ 'hero-gif__gif--on': active }"
-          aria-hidden="true"
-        />
-      </template>
+      <span
+        v-if="enabled && !reduced"
+        class="hero-gif__gif"
+        :class="{ 'hero-gif__gif--on': active }"
+        aria-hidden="true"
+      />
     </div>
   </section>
 </template>
@@ -305,9 +240,7 @@ onBeforeUnmount(() => {
 
   /* Эффект: ТЗ «Главная» п. 1, Р48; gif 2092:3801. Одинаков на всех ширинах ≥ 1024.
      Н46 — решение владельца 24.11.2026: гиф ×0.4, угол карточки в 8 px от курсора (Р48 — отступ, было 16),
-     круг 160 px (было 240) с мягким краем 10 % радиуса, гиф догоняет курсор с инерцией (k в скрипте) */
-  --_hero-circle: 160px; /* Н46 — диаметр круга */
-  --_hero-circle-feather: 0.1; /* Н46 — доля радиуса под мягкий край */
+     гиф догоняет курсор с инерцией (k в скрипте) */
   --_hero-gif-scale: 0.4; /* подбирает владелец */
   /* Figma 2092:3801: карточка 87,56 160×217 в полотне 348×330; поле справа 348−247=101, снизу 330−273=57 */
   --_hero-gif-w: calc(348px * var(--_hero-gif-scale));
@@ -324,11 +257,8 @@ onBeforeUnmount(() => {
 }
 
 .hero-gif__text {
-  --hero-x: 0px;
-  --hero-y: 0px;
   --gif-x: 0px;
   --gif-y: 0px;
-  --_hl: var(--color-black); /* Н55: цвет подсветки букв/слов */
 
   position: relative;
   /* Н50 — владелец 24.11.2026: надпись hero без уменьшения (ширина блока в окне = как во фрейме) */
@@ -346,10 +276,6 @@ onBeforeUnmount(() => {
   cursor: none; /* владелец 24.11.2026: гиф на месте курсора, курсор скрыт (Н46); только над надписью, пока эффект работает */
 }
 
-.hero-gif__text--blue {
-  --_hl: var(--color-blue-500); /* Н55: вариант ?hl=blue */
-}
-
 .hero-gif__line {
   margin: 0;
   color: var(--color-gray-500);
@@ -360,37 +286,9 @@ onBeforeUnmount(() => {
   text-align: center;
 }
 
-/* Н55, words (владелец 24.11.2026: быстрее, радиус меньше): слово загорается за 200 мс и гаснет за 600 мс */
+/* Н55: цвет буквы ставит скрипт (color-mix по близости к гифу); transition — как было в режиме letters до выбора */
 .hero-gif__tok {
   transition: color 600ms ease-out;
-}
-
-.hero-gif__tok--lit {
-  color: var(--_hl);
-  transition-duration: 200ms;
-}
-
-/* Чёрная копия текста поверх серой: видна только внутри круга вокруг курсора */
-.hero-gif__ink {
-  position: absolute;
-  inset: 0;
-  color: var(--color-black);
-  --_ink-mask: radial-gradient(
-    circle calc(var(--_hero-circle) / 2) at var(--hero-x) var(--hero-y),
-    black calc(var(--_hero-circle) / 2 * (1 - var(--_hero-circle-feather))),
-    transparent calc(var(--_hero-circle) / 2)
-  );
-
-  -webkit-mask-image: var(--_ink-mask);
-  mask-image: var(--_ink-mask);
-  opacity: 0;
-  pointer-events: none;
-  user-select: none;
-  transition: opacity 300ms ease-out;
-}
-
-.hero-gif__ink--on {
-  opacity: 1;
 }
 
 /* Гиф: центр карточки — в точке курсора (с инерцией), владелец 24.11.2026, Н46 */
@@ -456,7 +354,6 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-gif__ink,
   .hero-gif__gif,
   .hero-gif__tok {
     transition: none;

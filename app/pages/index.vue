@@ -124,12 +124,10 @@ onBeforeUnmount(() => {
           </a>
           <Languages mode="light" />
         </div>
-        <!-- Н54: каракуля в пустом углу hero (поверх неё — гиф и подсветка; из HeroGif ничего не правится) -->
-        <Doodle name="spark" class="home__doodle home__doodle--hero" />
         <HeroGif />
       </div>
 
-      <section id="projects" class="home__projects home__stop">
+      <section id="projects" class="home__projects">
         <CaptionHeading>{{ $t('home.projects.title') }}</CaptionHeading>
         <div class="home__carousel">
           <div
@@ -146,7 +144,7 @@ onBeforeUnmount(() => {
                 <CaseCard
                   :n="n"
                   class="home__case"
-                  :class="[`home__case--${n}`, { home__stop: n > 1 }]"
+                  :class="[`home__case--${n}`, n > 1 ? 'home__stop' : 'home__stop-first']"
                 />
               </li>
             </ul>
@@ -172,8 +170,6 @@ onBeforeUnmount(() => {
       <section class="home__services home__stop">
         <CaptionHeading>{{ $t('home.services.title') }}</CaptionHeading>
         <div class="home__services-list">
-          <!-- Н54: каракуля на строке подписи «Услуги», слева от неё -->
-          <Doodle name="spiral" tone="soft" class="home__doodle home__doodle--services" />
           <ServicesBlock v-for="type in serviceTypes" :key="type" :type="type" />
         </div>
       </section>
@@ -201,8 +197,12 @@ onBeforeUnmount(() => {
   --_hm-sv-gap: var(--space-20); /* Figma 35:2503 @380 … 35:2209 @1920 */
   --_hm-scroll-margin: 88px; /* 12 + 64 + 12: NavBar 35:2546 @380, Н17 (как у #form); Н50 — высота навбара 80 → 64 */
 
-  --_hm-pad-top: var(--_hm-pad-y); /* поле раздела сверху (Н51: подпись «Проекты» — верх остановки) */
-  --_hm-cap-h: var(--lh-h3); /* высота подписи «Проекты» = её line-height (CaptionHeading: < 768 h3, ≥ 768 h5) */
+  --_hm-pad-top: var(
+    --_hm-pad-y
+  ); /* поле раздела сверху (Н51: подпись «Проекты» — верх остановки) */
+  --_hm-cap-h: var(
+    --lh-h3
+  ); /* высота подписи «Проекты» = её line-height (CaptionHeading: < 768 h3, ≥ 768 h5) */
 
   min-width: 0;
 }
@@ -335,7 +335,9 @@ onBeforeUnmount(() => {
   .home__carousel {
     display: flex;
     flex-direction: column;
-    gap: var(--_hm-cases-gap); /* зазор «карточка → индикатор» = зазор между карточками, Figma 35:2474 @380 / 2064:1543 @768 */
+    gap: var(
+      --_hm-cases-gap
+    ); /* зазор «карточка → индикатор» = зазор между карточками, Figma 35:2474 @380 / 2064:1543 @768 */
     min-width: 0;
   }
 
@@ -439,6 +441,14 @@ onBeforeUnmount(() => {
     scroll-snap-align: end;
   }
 
+  /* Раздел «Проекты» сам не остановка: он выше окна (4 кейса), и его snap area покрывает окно — браузер разрешает любую
+     позицию внутри, остановки кейсов 2–4 и #projects «плавают». Остановка раздела — кейс 1 с вылетом вверх на резерв
+     (поле + подпись + зазор): область начинается ровно с верха раздела. */
+  .home__stop-first {
+    scroll-snap-align: start;
+    scroll-margin-top: var(--cc-top-reserve);
+  }
+
   /* лента кейсов на десктопе — колонка карточек (Н51), обёртки карусели в раскладке не участвуют */
   .home__carousel,
   .home__track,
@@ -517,25 +527,15 @@ onBeforeUnmount(() => {
   position: relative;
 }
 
-/* ---------- Н54 — владелец 24.11.2026: небольшие каракули в пустых местах экранов (всего 4: hero, перебивка × 2, «Услуги») ----------
+/* ---------- Н54 — владелец 24.11.2026: небольшие каракули в пустых местах экранов (осталась только перебивка: стрелка и, на ≥ 1024, петля; каракули на hero и в «Услугах» убраны по решению владельца 24.11.2026) ----------
    Рисунки и штрих — Doodle.vue. Размер ступенями (--doodle-size), положение — доли раздела. Не перекрывают текст,
    карточки и гиф; без движения и событий мыши. Источника в Figma нет, нужно подтверждение дизайнера. TODO(question): new Н54 */
 .home {
   --doodle-size: 64px; /* Н54, нет в Figma; 380 */
 }
 
-.home__hero .home__doodle {
-  position: absolute;
-}
-
-.home__doodle--hero {
-  right: 12%;
-  bottom: 14%;
-}
-
 .home__doodle--typing-a,
-.home__doodle--typing-b,
-.home__doodle--services {
+.home__doodle--typing-b {
   position: absolute;
 }
 
@@ -548,21 +548,10 @@ onBeforeUnmount(() => {
   display: none; /* на < 768 в перебивке одна каракуля */
 }
 
-.home__services-list {
-  position: relative;
-}
-
-.home__doodle--services {
-  left: 0;
-  /* по центру строки подписи «Услуги» (подпись справа, каракуля слева) */
-  bottom: calc(100% + var(--_hm-gap) + (var(--_hm-cap-h) - var(--doodle-size)) / 2);
-}
-
 @media (min-width: 768px) {
   .home {
     --doodle-size: 80px; /* Н54, нет в Figma; 768 */
   }
-
 }
 
 @media (min-width: 1024px) {
@@ -575,19 +564,6 @@ onBeforeUnmount(() => {
     display: block;
     top: 22%;
     right: 22%;
-  }
-
-  .home__doodle--hero {
-    right: auto;
-    bottom: 16%;
-    left: 9%;
-  }
-}
-
-/* низкое окно: в «Услугах» сверху нет места над подписью — каракуля убирается */
-@media (min-width: 1024px) and (max-height: 680px) {
-  .home__doodle--services {
-    display: none;
   }
 }
 
