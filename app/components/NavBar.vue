@@ -395,12 +395,12 @@ onBeforeUnmount(() => {
   margin-inline: var(--_nav-side);
 }
 
-/* ---------- Стекло: фон Alpha/White 90, blur, тень («Токены» → «Эффекты», Н4) ---------- */
+/* ---------- Капсула и панель < 1024: фон непрозрачный, тень («Токены» → «Эффекты») ----------
+ * Н66 — владелец 24.11.2026: непрозрачное мобильное меню, текст кнопки по центру.
+ * Было: Alpha/White 90 + blur (Н4), сквозь капсулу и панель читался текст позади. На ≥ 1024 капсула прежняя (стекло, ниже). */
 .navbar__bar,
 .navbar__panel {
-  background-color: var(--color-white-a90);
-  -webkit-backdrop-filter: blur(var(--blur-glass));
-  backdrop-filter: blur(var(--blur-glass));
+  background-color: var(--color-white);
   box-shadow: var(--shadow-glass);
 }
 
@@ -510,6 +510,7 @@ onBeforeUnmount(() => {
 .navbar__cta {
   display: flex;
   align-items: center;
+  justify-content: center; /* Н66: текст + стрелка группой по центру */
   box-sizing: border-box;
   width: 100%;
   min-height: var(--_nav-op-cta-height);
