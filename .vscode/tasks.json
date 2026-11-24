@@ -28,6 +28,19 @@
       "type": "npm",
       "script": "test:e2e",
       "problemMatcher": []
+    },
+    {
+      // Сайт в Docker для телефона в том же Wi-Fi: http://<IP компьютера>:8080 (docker-compose.local.yml)
+      "label": "local: Docker для Wi-Fi (up)",
+      "type": "shell",
+      "command": "docker compose -f docker-compose.local.yml up -d --build",
+      "problemMatcher": []
+    },
+    {
+      "label": "local: Docker для Wi-Fi (down)",
+      "type": "shell",
+      "command": "docker compose -f docker-compose.local.yml down",
+      "problemMatcher": []
     }
   ]
 }

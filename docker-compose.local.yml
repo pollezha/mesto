@@ -1,0 +1,23 @@
+# Локальный просмотр в домашней сети (телефон в том же Wi-Fi), без зависимости от Node на машине.
+# Только контейнер app: Nitro сам отдаёт пререндеренные страницы и POST /api/lead. Боевой nginx (docker-compose.yml)
+# здесь не нужен: он перенаправляет на https://mesto.studio и по IP из локальной сети не откроется.
+#
+#   docker compose -f docker-compose.local.yml up -d --build   # собрать и запустить
+#   http://<IP компьютера в Wi-Fi>:8080                         # открыть с телефона
+#   docker compose -f docker-compose.local.yml down             # остановить
+#
+# Форма: без .env заявки не уходят (ответ 502, форма покажет ошибку); с .env (TELEGRAM_*, SMTP_*, MAIL_*) — отправляются.
+name: mesto-local
+
+services:
+  app:
+    build:
+      context: .
+      target: app
+    image: mesto-app:local
+    ports:
+      - '8080:3000'
+    env_file:
+      - path: .env
+        required: false
+    restart: unless-stopped
