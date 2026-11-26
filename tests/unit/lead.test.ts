@@ -4,8 +4,18 @@ const sendMail = vi.fn()
 const createTransport = vi.fn(() => ({ sendMail }))
 vi.mock('nodemailer', () => ({ default: { createTransport } }))
 
-const { processLead, resetRateLimit, takeRateLimit, rateLimitSize, formatLead, RATE_LIMIT } =
-  await import('../../server/utils/lead')
+const {
+  processLead,
+  resetRateLimit,
+  takeRateLimit,
+  takeSendSlot,
+  rateLimitSize,
+  rateLimitKey,
+  isInternalIp,
+  formatLead,
+  RATE_LIMIT,
+  SEND_CAP,
+} = await import('../../server/utils/lead')
 
 // server/api/lead.post.ts — «Инфраструктура» → «Обработчик формы /api/lead»; ТЗ → «Форма».
 const ENV = {
@@ -168,12 +178,62 @@ describe('POST /api/lead', () => {
       expect(await send({}, '5.5.5.5')).toEqual({ status: 429 })
     })
 
-    it('устаревшие IP удаляются из памяти на следующем запросе', () => {
+    it('устаревшие IP удаляются из памяти, но не чаще раза в минуту (Н73)', () => {
       const t0 = 5_000_000
       takeRateLimit('8.8.8.8', t0)
       expect(rateLimitSize()).toBe(1)
       takeRateLimit('8.8.4.4', t0 + RATE_LIMIT.windowMs + 1)
       expect(rateLimitSize()).toBe(1) // остался только новый IP
+    })
+
+    it('очистка идёт раз в минуту: между проходами устаревшая запись ещё лежит (Н73)', () => {
+      const s0 = 9_000_000
+      takeRateLimit('8.8.8.8', s0)
+      takeRateLimit('8.8.4.4', s0 + RATE_LIMIT.windowMs - 30_000) // проход: 8.8.8.8 ещё жив
+      expect(rateLimitSize()).toBe(2)
+      takeRateLimit('1.0.0.1', s0 + RATE_LIMIT.windowMs + 10_000) // < минуты с прохода
+      expect(rateLimitSize()).toBe(3) // 8.8.8.8 устарел, но очистки ещё не было
+      takeRateLimit('1.0.0.2', s0 + RATE_LIMIT.windowMs + 40_000) // > минуты — проход
+      expect(rateLimitSize()).toBe(3) // 8.8.8.8 удалён, 1.0.0.2 добавлен
+    })
+
+    it('Map не растёт бесконечно: при потоке разных IP остаётся только окно', () => {
+      const t0 = 20_000_000
+      for (let i = 0; i < 500; i++) takeRateLimit(`11.0.${i >> 8}.${i & 255}`, t0 + i * 1000)
+      // 500 с потока < окна 600 с: всё живо
+      expect(rateLimitSize()).toBe(500)
+      for (let i = 0; i < 500; i++) {
+        takeRateLimit(`12.0.${i >> 8}.${i & 255}`, t0 + 2_000_000 + i * 1000)
+      }
+      expect(rateLimitSize()).toBeLessThanOrEqual(500 + 1)
+    })
+
+    it('IPv6: адреса одной /64 делят лимит, разные /64 — нет (Н73)', () => {
+      const t0 = 30_000_000
+      for (let i = 0; i < RATE_LIMIT.max; i++) {
+        expect(takeRateLimit(`2001:db8:1:2::${i + 1}`, t0 + i)).toBe(true)
+      }
+      expect(takeRateLimit('2001:db8:1:2:aaaa:bbbb:cccc:dddd', t0 + 100)).toBe(false)
+      expect(takeRateLimit('2001:db8:1:3::1', t0 + 100)).toBe(true)
+      expect(rateLimitSize()).toBe(2)
+    })
+
+    it('сокращённые и полные записи IPv6 дают один ключ', () => {
+      expect(rateLimitKey('2001:db8::1')).toBe(rateLimitKey('2001:0db8:0:0:0:0:0:2'))
+      expect(rateLimitKey('2001:DB8::1')).toBe('2001:db8:0:0::/64')
+      expect(rateLimitKey('::1')).toBe('0:0:0:0::/64')
+      expect(rateLimitKey('2001:db8:0:1::')).not.toBe(rateLimitKey('2001:db8::'))
+    })
+
+    it('::ffff:a.b.c.d — как IPv4; IPv4 и нераспознанное — как есть', () => {
+      expect(rateLimitKey('::ffff:1.2.3.4')).toBe('1.2.3.4')
+      expect(rateLimitKey('::FFFF:0102:0304')).toBe('1.2.3.4')
+      expect(rateLimitKey('1.2.3.4')).toBe('1.2.3.4')
+      expect(rateLimitKey('not-an-ip')).toBe('not-an-ip')
+      expect(rateLimitKey('unknown')).toBe('unknown')
+      const t0 = 40_000_000
+      for (let i = 0; i < RATE_LIMIT.max; i++) takeRateLimit('1.2.3.4', t0 + i)
+      expect(takeRateLimit('::ffff:1.2.3.4', t0 + 100)).toBe(false)
     })
 
     it('окно истекает через 10 минут', () => {
@@ -182,6 +242,87 @@ describe('POST /api/lead', () => {
       expect(takeRateLimit('6.6.6.6', t0 + 1000)).toBe(false)
       expect(takeRateLimit('6.6.6.6', t0 + RATE_LIMIT.windowMs - 1)).toBe(false)
       expect(takeRateLimit('6.6.6.6', t0 + RATE_LIMIT.windowMs + RATE_LIMIT.max)).toBe(true)
+    })
+  })
+
+  describe('общий потолок отправки 60 в час (Н73)', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('61-я отправка — 429 без письма; через час снова 200', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-11-26T10:00:00Z'))
+      for (let i = 0; i < SEND_CAP.max; i++) {
+        expect(await send(valid, `20.0.${i >> 8}.${i & 255}`)).toEqual({ status: 200 })
+      }
+      expect(sendMail).toHaveBeenCalledTimes(SEND_CAP.max)
+      expect(await send(valid, '21.0.0.1')).toEqual({ status: 429 })
+      expect(sendMail).toHaveBeenCalledTimes(SEND_CAP.max)
+      vi.setSystemTime(new Date('2026-11-26T11:00:01Z'))
+      expect(await send(valid, '21.0.0.2')).toEqual({ status: 200 })
+      expect(sendMail).toHaveBeenCalledTimes(SEND_CAP.max + 1)
+    })
+
+    it('ловушка и 422 потолок не расходуют', async () => {
+      for (let i = 0; i < SEND_CAP.max; i++) {
+        await send({ ...valid, website: 'x' }, `22.0.0.${i}`)
+        await send({ ...valid, name: '' }, `23.0.0.${i}`)
+      }
+      expect(await send(valid, '24.0.0.1')).toEqual({ status: 200 })
+    })
+
+    it('takeSendSlot: скользящее окно с подставным временем', () => {
+      const t0 = 50_000_000
+      for (let i = 0; i < SEND_CAP.max; i++) expect(takeSendSlot(t0 + i)).toBe(true)
+      expect(takeSendSlot(t0 + 1000)).toBe(false)
+      expect(takeSendSlot(t0 + SEND_CAP.windowMs)).toBe(true) // первая метка вышла из окна
+    })
+  })
+
+  describe('внутренний IP клиента (Н74)', () => {
+    const MSG = '[lead] client ip is internal — check proxy / X-Real-IP (Н74)'
+
+    it.each([
+      '10.1.2.3',
+      '172.16.0.1',
+      '172.31.255.1',
+      '192.168.1.1',
+      '127.0.0.1',
+      '169.254.1.1',
+      '::1',
+      'fc00::1',
+      'fd12:3456::1',
+      'fe80::1',
+      'febf::1',
+      'unknown',
+      '::ffff:10.0.0.1',
+    ])('%s — внутренний', (ip) => {
+      expect(isInternalIp(ip)).toBe(true)
+    })
+
+    it.each(['8.8.8.8', '172.15.0.1', '172.32.0.1', '192.169.0.1', '2001:db8::1', 'fec0::1'])(
+      '%s — не внутренний',
+      (ip) => {
+        expect(isInternalIp(ip)).toBe(false)
+      },
+    )
+
+    it('предупреждение один раз, без IP и данных формы; ответ не меняется', async () => {
+      expect(await send(valid, '172.18.0.2')).toEqual({ status: 200 })
+      expect(await send(valid, '10.0.0.5')).toEqual({ status: 200 })
+      expect(await send(valid, 'unknown')).toEqual({ status: 200 })
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+      expect(warnSpy).toHaveBeenCalledWith(MSG)
+      const logged = JSON.stringify(warnSpy.mock.calls)
+      for (const secret of ['172.18.0.2', '10.0.0.5', 'Анна', 'anna@example.com', 'ребрендинг']) {
+        expect(logged).not.toContain(secret)
+      }
+    })
+
+    it('публичный IP — без предупреждения', async () => {
+      await send(valid, '8.8.8.8')
+      expect(warnSpy).not.toHaveBeenCalled()
     })
   })
 
