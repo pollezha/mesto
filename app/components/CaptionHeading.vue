@@ -52,37 +52,43 @@ const tag = computed(() => `h${props.level}`)
 
 /* Н61 — владелец 24.11.2026: на < 1024 подпись — одна строка на всю ширину «01 ──── Проекты»; на ≥ 1024 номера и линии нет.
    Номер — Gray 500 тем же кеглем, линия 1 px Gray 300. Нужно подтверждение дизайнера. TODO(question): new Н61 */
-.caption-heading__num,
-.caption-heading__line {
-  display: none;
+.caption-heading:has(.caption-heading__num) {
+  display: flex;
+  gap: var(--space-20);
+  align-items: center;
+  padding-right: 0;
+  text-align: left;
 }
 
-@media (max-width: 1023px) {
-  .caption-heading:has(.caption-heading__num) {
-    display: flex;
-    gap: var(--space-20);
-    align-items: center;
-    padding-right: 0;
-    text-align: left;
-  }
+.caption-heading__num {
+  display: block;
+  color: var(--color-gray-500);
+}
 
-  .caption-heading__num {
-    display: block;
-    color: var(--color-gray-500);
-  }
-
-  .caption-heading__line {
-    display: block;
-    flex: 1 1 auto;
-    height: 1px;
-    background: var(--color-gray-300);
-  }
+.caption-heading__line {
+  display: block;
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--color-gray-300);
 }
 
 @media (min-width: 768px) {
   .caption-heading {
     font-size: var(--fs-h5);
     line-height: var(--lh-h5);
+  }
+}
+
+@media (min-width: 1024px) {
+  .caption-heading:has(.caption-heading__num) {
+    display: block;
+    padding-right: var(--space-40);
+    text-align: right;
+  }
+
+  .caption-heading__num,
+  .caption-heading__line {
+    display: none;
   }
 }
 </style>

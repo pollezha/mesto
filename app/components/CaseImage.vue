@@ -102,20 +102,6 @@ const tabletSet = computed(() => wSet(tabletFiles))
   <div class="case-image" :class="{ 'case-image--framed': framed }" :data-case="n">
     <picture>
       <source
-        v-if="!framed"
-        media="(max-width: 767px)"
-        :srcset="phoneSet"
-        :sizes="phoneSizes"
-        type="image/webp"
-      />
-      <source
-        v-if="!framed"
-        media="(max-width: 1023px)"
-        :srcset="tabletSet"
-        :sizes="tabletSizes"
-        type="image/webp"
-      />
-      <source
         v-if="!framed && n === 1"
         media="(min-width: 1024px)"
         :srcset="featSet"
@@ -126,7 +112,16 @@ const tabletSet = computed(() => wSet(tabletFiles))
       <source media="(min-width: 1440px)" :srcset="srcset(1440)" type="image/webp" />
       <source media="(min-width: 1280px)" :srcset="srcset(1280)" type="image/webp" />
       <source media="(min-width: 1024px)" :srcset="srcset(1024)" type="image/webp" />
+      <!-- mobile-first: от широкого к узкому (только min-width, Р4); первый подошедший <source> выигрывает -->
+      <source
+        v-if="!framed"
+        media="(min-width: 768px)"
+        :srcset="tabletSet"
+        :sizes="tabletSizes"
+        type="image/webp"
+      />
       <source media="(min-width: 768px)" :srcset="srcset(768)" type="image/webp" />
+      <source v-if="!framed" :srcset="phoneSet" :sizes="phoneSizes" type="image/webp" />
       <img
         class="case-image__img"
         :src="url(380)"
