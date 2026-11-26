@@ -183,7 +183,7 @@ onBeforeUnmount(() => {
   top: 50%;
   left: 100%;
   width: 2px; /* Р47 */
-  height: var(--fs-txt-1);
+  height: 1em; /* кегль текста элемента (на ≥ 1024 --fs-txt-1, на главной < 1024 страница ставит --fs-h3) */
   transform: translateY(-50%);
   background: var(--color-blue-500);
   animation: typing-blink 1s steps(1, end) infinite;
