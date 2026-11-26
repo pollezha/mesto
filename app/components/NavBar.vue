@@ -108,6 +108,7 @@ function onKeydown(event: KeyboardEvent) {
 // Н67 — владелец 24.11.2026: при открытом меню страница прокручивается, меню закрывается после прокрутки
 // (отменяет ТЗ «Интерактив»: фон не скроллится). overflow у html меню не трогает.
 const CLOSE_SCROLL_PX = 48 // прокрутка пользователя от позиции открытия, после которой меню закрывается (= --space-48)
+const SNAP_RETURN_MS = 1500 // после прокрутки вверх так долго движение вниз считаем возвратом snap, а не жестом: навбар не прячем (Н48)
 const INTENT_MS = 1500 // сколько после wheel / touch / клавиши прокрутку считаем пользовательской (инерция тача)
 let openY = 0
 watch(
@@ -213,7 +214,7 @@ function update() {
     // сдвиг не от пользователя: положение запоминаем, состояние навбара не меняем
     accDown = 0
     accUp = 0
-  } else if (delta > 0 && lastIntentDir < 0 && performance.now() - lastIntentAt < 1500) {
+  } else if (delta > 0 && lastIntentDir < 0 && performance.now() - lastIntentAt < SNAP_RETURN_MS) {
     // пользователь только что крутил вверх, а страница идёт вниз — это snap возвращает раздел на остановку: навбар не прячем
   } else if (delta > 0) {
     accUp = 0

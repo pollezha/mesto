@@ -115,6 +115,9 @@ const photoSizes = '(min-width: 1920px) 1880px, 100vw'
 // так, чтобы раскрытый блок оказался целиком в окне (верх блока у верха окна с полем --_vmargin), если он не помещается
 // в текущей позиции. Ждём конца роста блока (иначе соседний закрывающийся блок сдвигает его верх). При закрытии — без прокрутки.
 let scrollFrame = 0
+// Запасной таймер раскрытия: если transitionend по height не пришёл (анимация прервана, вкладка в фоне), блок всё равно
+// доводится до видимого положения. Чуть больше 300 мс анимации высоты (--_ease), чтобы не опережать штатное событие.
+const TRANSITION_FALLBACK_MS = 450
 function reduced(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
@@ -148,6 +151,7 @@ function toggle() {
   if (!isOpen.value && root) {
     // Навбар показан (пришли снизу) — раскрытый блок отступает от верха на его зону; скрыт — зоны нет.
     // Класс навбара читаем напрямую: управлять им из блока нельзя (Н48 — окно тишины после клика не меняет его состояние).
+    // Связь с NavBar.vue: блок читает класс `navbar--hidden` у `.navbar`; при переименовании класса править и здесь.
     const nav = document.querySelector('.navbar')
     const shown = !!nav && !nav.classList.contains('navbar--hidden')
     root.style.setProperty('--_nav', shown ? 'var(--_hm-scroll-margin, 0px)' : '0px')
@@ -170,7 +174,7 @@ function toggle() {
     if (event.target === root && event.propertyName === 'height') finish()
   }
   root.addEventListener('transitionend', onEnd)
-  setTimeout(finish, 450)
+  setTimeout(finish, TRANSITION_FALLBACK_MS)
 }
 </script>
 

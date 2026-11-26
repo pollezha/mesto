@@ -116,13 +116,8 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
  */
 .home {
   --_hm-pad-y: var(--space-24); /* 12 — Figma 35:2471 @380; ≥ 768 — --space-60 */
-  --_hm-pad-x: var(--space-24); /* 12 — Figma 35:2471 @380; ≥ 768 — --space-20 */
-  --_hm-gap: var(--space-48); /* 10 / 29 / 31 / 36 / 38 / 48 — Figma 35:2471 @380 … 35:2175 @1920 */
   --_hm-cases-gap: var(--space-32); /* 20 — Figma 35:2474 @380; ≥ 768 — --space-48 */
   --_hm-sv-pad-y: 36px; /* Figma 35:2500 @380 (токена 36 на 380 нет); ≥ 768 — --space-60 */
-  --_hm-sv-pad-x: var(
-    --space-20
-  ); /* 8 / 12 / 13 / 15 / 16 / 20 — Figma 35:2500 @380 … 35:2206 @1920 */
   --_hm-sv-gap: var(--space-20); /* Figma 35:2503 @380 … 35:2209 @1920 */
   --_hm-scroll-margin: 88px; /* 12 + 64 + 12: NavBar 35:2546 @380, Н17 (как у #form); Н50 — высота навбара 80 → 64 */
 
@@ -166,15 +161,9 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 .home__projects {
   /* Н51 (≥ 1024) — владелец 24.11.2026: подпись «Проекты» в одном экране с кейсом 1. Остановка (и якорь #projects, ТЗ
      «Общие правила» п. 9) — верх раздела, scroll-margin нет, чтобы остановки не сдвигались; кейс 1 ниже на этот резерв
-     (см. --cc-avail-h-1 в CaseCard). На < 1024 (Н56) якорь — подпись со scroll-margin под навбар (Н17), как до Н51.
+     (см. --cc-avail-h-1 в CaseCard). На < 1024 (Н56) якорь #projects — сам раздел со scroll-margin под навбар (Н17).
      TODO(question): new Н51 */
   --cc-top-reserve: calc(var(--_hm-pad-top) + var(--_hm-cap-h) + var(--_hm-gap));
-
-  padding: var(--_hm-pad-top) var(--_hm-pad-x) var(--_hm-pad-y);
-}
-
-.home__services {
-  padding: var(--_hm-sv-pad-y) var(--_hm-sv-pad-x);
 }
 
 .home__services-list {
@@ -186,7 +175,6 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 @media (min-width: 768px) {
   .home {
     --_hm-pad-y: var(--space-60); /* 36 — Figma 2064:1540 @768 */
-    --_hm-pad-x: var(--space-20); /* 12 — Figma 2064:1540 @768 */
     --_hm-cases-gap: var(--space-48); /* 29 — Figma 2064:1543 @768 */
     --_hm-sv-pad-y: var(--space-60); /* 36 — Figma 2064:1573 @768 */
     --_hm-scroll-margin: 96px; /* 16 + 64 + 16: NavBar 2064:1584 @768, Н17 */
@@ -340,7 +328,7 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 /* ---------- Н51 — владелец 24.11.2026: на ≥ 1024 каждый раздел главной — один экран (scroll snap по вертикали) ----------
    Остановки scroll snap — разделы (.home__stop); высота экрана = высота окна, с учётом zoom (Н50).
    Раздел выше окна (раскрытый блок услуг, CTA в низком окне) не запирает прокрутку: snap area больше окна — внутри
-   прокручивается свободно. Футер — остановка по низу страницы. TODO(question): new Н51 */
+   прокручивается свободно. Футер — остановка по верху (Н51, правка 26.11). TODO(question): new Н51 */
 @media (prefers-reduced-motion: reduce) {
   html.is-snap-home {
     scroll-behavior: auto; /* snap остаётся, плавности нет */
@@ -380,7 +368,7 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 
   .home__projects {
     scroll-margin-top: 0; /* Н51: остановка — верх раздела, якорь #projects без поля */
-    padding: var(--_hm-pad-top) var(--_hm-pad-x) var(--_hm-pad-y);
+    padding: 0 var(--_hm-pad-x) var(--_hm-pad-y); /* верх раздела = верх экрана Проекты (якорь #projects) */
   }
 
   .home__services {
@@ -441,10 +429,6 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 
   .home .home__caption-m {
     display: none;
-  }
-
-  .home__projects {
-    padding-top: 0; /* верх раздела = верх экрана Проекты (якорь #projects) */
   }
 
   .home__cases {

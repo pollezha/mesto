@@ -130,7 +130,8 @@ export const kit: KitEntry[] = [
       { label: 'Heading · home.projects.title', props: { text: 'projects' } },
       { label: 'Heading · home.services.title', props: { text: 'services' } },
       // Н61: на < 1024 с номером раздела и линией (на ≥ 1024 номера нет)
-      { label: 'Heading · с номером (Н61)', props: { text: 'projects', num: '01' } },
+      // номер — из словаря (home.projects.num), как на сайте; виден только < 1024
+      { label: 'Heading · с номером (Н61)', props: { text: 'projects', withNum: true }, widths: [768, 380] },
     ],
   },
   {

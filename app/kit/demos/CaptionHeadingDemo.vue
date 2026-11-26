@@ -3,12 +3,13 @@
 // Служебный файл /__kit, на сайт не попадает.
 import CaptionHeading from '~/components/CaptionHeading.vue'
 
-withDefaults(defineProps<{ text?: 'projects' | 'services'; num?: string }>(), {
+// withNum — номер раздела из словаря (home.projects.num), как на главной
+withDefaults(defineProps<{ text?: 'projects' | 'services'; withNum?: boolean }>(), {
   text: 'projects',
-  num: undefined,
+  withNum: false,
 })
 </script>
 
 <template>
-  <CaptionHeading :num="num">{{ $t(`home.${text}.title`) }}</CaptionHeading>
+  <CaptionHeading :num="withNum ? $t('home.projects.num') : undefined">{{ $t(`home.${text}.title`) }}</CaptionHeading>
 </template>
