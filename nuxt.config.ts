@@ -28,7 +28,7 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    // Серверные переменные (TELEGRAM_*, SMTP_*, MAIL_*) здесь не заводятся: без префикса NUXT_
+    // Серверные переменные (SMTP_*, MAIL_*) здесь не заводятся: без префикса NUXT_
     // они не переопределяют runtimeConfig в рантайме. Их читает server/utils/env.ts (Н1).
     public: {
       // Домен для canonical, hreflang и sitemap. Значение по умолчанию — из docs («Переменные окружения»);

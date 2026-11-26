@@ -8,7 +8,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 # Публичные переменные попадают в пререндеренный HTML при сборке (не секреты). Значения — build args из CI;
-# файл окружения на сервере на пререндер не влияет. Секреты (TELEGRAM_*, SMTP_*, MAIL_*) сюда не передаются.
+# файл окружения на сервере на пререндер не влияет. Секреты (SMTP_*, MAIL_*) сюда не передаются.
 ARG NUXT_PUBLIC_SITE_URL=https://mesto.studio
 ARG NUXT_PUBLIC_ANALYTICS_ENABLED=false
 ARG NUXT_PUBLIC_GA_ID=

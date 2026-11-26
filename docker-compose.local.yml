@@ -6,7 +6,7 @@
 #   http://<IP компьютера в Wi-Fi>:8080                         # открыть с телефона
 #   docker compose -f docker-compose.local.yml down             # остановить
 #
-# Форма: без .env заявки не уходят (ответ 502, форма покажет ошибку); с .env (TELEGRAM_*, SMTP_*, MAIL_*) — отправляются.
+# Форма: без .env заявки не уходят (ответ 502, форма покажет ошибку); с .env (SMTP_*, MAIL_*) — отправляются.
 name: mesto-local
 
 services:
