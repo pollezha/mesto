@@ -3,9 +3,12 @@
 // Служебный файл /__kit, на сайт не попадает.
 import CaptionHeading from '~/components/CaptionHeading.vue'
 
-withDefaults(defineProps<{ text?: 'projects' | 'services' }>(), { text: 'projects' })
+withDefaults(defineProps<{ text?: 'projects' | 'services'; num?: string }>(), {
+  text: 'projects',
+  num: undefined,
+})
 </script>
 
 <template>
-  <CaptionHeading>{{ $t(`home.${text}.title`) }}</CaptionHeading>
+  <CaptionHeading :num="num">{{ $t(`home.${text}.title`) }}</CaptionHeading>
 </template>

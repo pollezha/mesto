@@ -129,14 +129,16 @@ export const kit: KitEntry[] = [
     variants: [
       { label: 'Heading · home.projects.title', props: { text: 'projects' } },
       { label: 'Heading · home.services.title', props: { text: 'services' } },
+      // Н61: на < 1024 с номером раздела и линией (на ≥ 1024 номера нет)
+      { label: 'Heading · с номером (Н61)', props: { text: 'projects', num: '01' } },
     ],
   },
   {
     // State (Default / Hover / Pressed) — :hover / :active, в песочнице видно наведением и нажатием.
     // Device выбирает место использования: Desktop на ≥ 1024, Mobile на 768 и 380 («Какой вариант на какой ширине»).
     // With Icon на экранах сайта не стоит («Компоненты» → Icon/Arrow Up Right) — в реестре нет, в Button.vue сверстан.
-    // Secondary без переопределений стоит только в блоке услуг ≥ 1280 (на 1440/1280 размеры по RU-экрану задаёт
-    // ServicesBlock, Р3, Р75); на 1024 и ниже Secondary есть только в cookie-баннере с размерами Р73 — его показывает CookieBanner.
+    // Secondary в блоке услуг ≥ 1280 убрана (Н63) — сейчас вариант на сайте не используется (был: размеры по RU-экрану
+    // задаёт ServicesBlock, Р3, Р75); на 1024 и ниже Secondary есть только в cookie-баннере с размерами Р73 — его показывает CookieBanner.
     name: 'Button',
     figma: '1:1748',
     component: ButtonDemo,
@@ -440,7 +442,8 @@ export const kit: KitEntry[] = [
   },
   {
     // Hero-надпись главной (Header 35:2170 @1920 … 35:2469 @380; EN 51:13656 … 51:13707) + эффект курсора.
-    // Вариантов нет; на < 1024 — только надпись. Эффект (круг 240 + гиф) — наведением мыши на ≥ 1024.
+    // Вариантов нет; на < 1024 — только надпись. Эффект на ≥ 1024 с мышью: гиф на месте курсора и подсветка букв рядом с ним (Н46, Н55); на тач и < 1024 — подсветка
+    // без гифа (автопилот, Н64); при reduced motion эффекта нет.
     name: 'HeroGif',
     figma: '2092:3801',
     component: HeroGif,
