@@ -1,0 +1,21 @@
+# Н75: еженедельные обновления закреплённых версий (actions по SHA, образы Docker, npm).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  # Базовые образы в Dockerfile (node, alpine с digest).
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+  # Образы в docker-compose.yml (certbot).
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly

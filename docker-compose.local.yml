@@ -6,7 +6,11 @@
 #   http://<IP компьютера в Wi-Fi>:8080                         # открыть с телефона
 #   docker compose -f docker-compose.local.yml down             # остановить
 #
-# Форма: без .env заявки не уходят (ответ 502, форма покажет ошибку); с .env (TELEGRAM_*, SMTP_*, MAIL_*) — отправляются.
+# Форма (Н77): по умолчанию без SMTP — заявки не уходят (ответ 502, форма покажет ошибку); боевой файл окружения
+# не подключается. Чтобы письма уходили, создайте отдельный файл .env.local-docker (SMTP_*, MAIL_*, лучше тестовый
+# ящик) и перезапустите контейнер. Пока контейнер запущен с этим файлом, любой в той же Wi-Fi может слать письма
+# с этого SMTP и обходить лимит, подменяя заголовок X-Real-IP (nginx здесь нет). Включайте только на время проверки:
+# после неё — docker compose -f docker-compose.local.yml down и удалите файл. .env.* исключены из git и из образа.
 name: mesto-local
 
 services:
@@ -18,6 +22,6 @@ services:
     ports:
       - '8080:3000'
     env_file:
-      - path: .env
+      - path: .env.local-docker
         required: false
     restart: unless-stopped

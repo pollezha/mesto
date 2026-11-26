@@ -17,10 +17,12 @@ function configure(p: { enabled: boolean; gaId?: string; ymId?: string }) {
   pub.ymId = p.ymId ?? ''
 }
 
+// Удаление по стандарту: max-age=0 и expires в прошлом, тот же path. happy-dom понимает только expires
+// (max-age=0 оставляет пустую запись «name=»), браузеры — оба.
 function clearCookies() {
   for (const c of document.cookie.split(';')) {
     const name = c.split('=')[0]!.trim()
-    if (name) document.cookie = `${name}=; max-age=0; path=/`
+    if (name) document.cookie = `${name}=; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`
   }
 }
 

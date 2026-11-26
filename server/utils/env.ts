@@ -4,8 +4,6 @@
 export function serverEnv() {
   const env = process.env
   return {
-    telegramBotToken: env.TELEGRAM_BOT_TOKEN ?? '',
-    telegramChatId: env.TELEGRAM_CHAT_ID ?? '',
     smtpHost: env.SMTP_HOST ?? '',
     smtpPort: env.SMTP_PORT ?? '',
     smtpUser: env.SMTP_USER ?? '',

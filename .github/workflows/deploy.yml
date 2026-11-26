@@ -1,12 +1,23 @@
 # Инфраструктура → «Деплой». push в main → проверки и сборка → два образа (стадии app и nginx) с тегом sha
 # в GHCR → по SSH на VPS: docker compose pull && docker compose up -d. Откат — запуск предыдущего тега образов.
 #
+# Н75: все actions закреплены полным SHA коммита (комментарий — версия); обновляет Dependabot (.github/dependabot.yml).
+#
 # Нужно от владельца (Settings → Secrets and variables → Actions):
 #   secrets: SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, SSH_KNOWN_HOSTS (вывод ssh-keyscan для VPS), SSH_PORT (необязательно);
 #   variables: DEPLOY_ENABLED=true (включает job deploy), DEPLOY_PATH (папка с docker-compose.yml на VPS),
 #              NUXT_PUBLIC_ANALYTICS_ENABLED, NUXT_PUBLIC_GA_ID, NUXT_PUBLIC_YM_ID, NUXT_PUBLIC_SITE_URL (не секреты:
 #              попадают в пререндеренный HTML при сборке образа nginx; пусто — значения по умолчанию).
-# Секреты приложения (TELEGRAM_*, SMTP_*, MAIL_*) в CI не нужны: они лежат в файле окружения на VPS.
+# Почта (Н71): job deploy при каждом выкате сам записывает файл окружения приложения на VPS (DEPLOY_PATH, права 600)
+#   из секретов репозитория: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM, MAIL_TO (обязательны),
+#   SMTP_SECURE (необязателен: пусто = false, STARTTLS; true/1 — TLS сразу, обычно порт 465).
+#   Список обязательных строже приложения: lead.ts требует только SMTP_HOST, MAIL_FROM, MAIL_TO, но почта владельца
+#   работает только с авторизацией, поэтому SMTP_PORT, SMTP_USER и SMTP_PASS тоже обязательны.
+#   Если обязательный секрет пуст, а также если DEPLOY_PATH пуст или не начинается с /, деплой падает до любых
+#   изменений на сервере. Значение секрета не может содержать одинарную кавычку, перевод строки и не может
+#   заканчиваться обратной косой чертой. Значения идут в stdin SSH, не в аргументах и не в логах.
+#   Файл на VPS руками править не нужно: он перезаписывается при выкате.
+#   Секреты нужны только при push в main; pull_request этот workflow не запускает (репозиторий публичный).
 name: deploy
 
 on:
@@ -24,8 +35,8 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
@@ -43,9 +54,9 @@ jobs:
       # GHCR требует имя в нижнем регистре.
       OWNER: ${{ github.repository_owner }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -53,7 +64,7 @@ jobs:
       - name: Имя владельца строчными
         run: echo "OWNER_LC=${OWNER,,}" >> "$GITHUB_ENV"
       - name: Образ app
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           target: app
@@ -62,7 +73,7 @@ jobs:
           cache-from: type=gha,scope=app
           cache-to: type=gha,scope=app,mode=max
       - name: Образ nginx (страницы пререндерятся при сборке — публичные переменные передаются build args)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           target: nginx
@@ -78,9 +89,14 @@ jobs:
 
   deploy:
     needs: images
-    # Включается переменной репозитория DEPLOY_ENABLED=true, когда готовы VPS и секреты SSH.
+    # Включается переменной репозитория DEPLOY_ENABLED=true, когда готовы VPS, секреты SSH и почтовые секреты
+    # (SMTP_*, MAIL_*, см. шапку): без них первый шаг job остановит деплой.
     if: ${{ vars.DEPLOY_ENABLED == 'true' }}
     runs-on: ubuntu-latest
+    # Н78: только чтение репозитория и образов (токен нужен для docker login на VPS).
+    permissions:
+      contents: read
+      packages: read
     env:
       OWNER: ${{ github.repository_owner }}
       SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
@@ -90,18 +106,73 @@ jobs:
       SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
       GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # Первым шагом, до любых действий на сервере. Без set -x и без вывода значений.
+      - name: Проверить почтовые секреты и собрать файл окружения
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+        run: |
+          set +x
+          # Иначе scp и запись файла окружения уйдут в домашнюю папку пользователя SSH.
+          case "$DEPLOY_PATH" in
+            /*) ;;
+            *)
+              echo "::error::Переменная репозитория DEPLOY_PATH пуста или не абсолютный путь (должна начинаться с /). Деплой остановлен, сервер не тронут."
+              exit 1
+              ;;
+          esac
+          missing=''
+          for name in SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS MAIL_FROM MAIL_TO; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Не заданы секреты репозитория:$missing. Settings → Secrets and variables → Actions. Деплой остановлен, сервер не тронут."
+            exit 1
+          fi
+          # Значения пишутся в одинарных кавычках (в файле окружения compose они буквальные), поэтому
+          # одинарная кавычка, перевод строки и обратная косая черта в конце значения недопустимы
+          # (завершающий \ экранирует закрывающую кавычку). Сами значения не выводятся.
+          for name in SMTP_HOST SMTP_PORT SMTP_SECURE SMTP_USER SMTP_PASS MAIL_FROM MAIL_TO; do
+            value="${!name}"
+            case "$value" in
+              *"'"*|*$'\n'*|*$'\r'*|*'\')
+                echo "::error::Секрет $name содержит одинарную кавычку, перевод строки или заканчивается обратной косой чертой: так значение не записать. Деплой остановлен."
+                exit 1
+                ;;
+            esac
+          done
+          umask 077
+          out="$RUNNER_TEMP/app-env"
+          : > "$out"
+          for name in SMTP_HOST SMTP_PORT SMTP_SECURE SMTP_USER SMTP_PASS MAIL_FROM MAIL_TO; do
+            printf "%s='%s'\n" "$name" "${!name}" >> "$out"
+          done
       - name: Настроить SSH
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-      - name: Обновить compose-файл на VPS и перезапустить
+      - name: Обновить compose-файл и настройки почты на VPS, перезапустить
         run: |
+          set +x
           SSH="ssh -i $HOME/.ssh/deploy_key -p $SSH_PORT -o StrictHostKeyChecking=yes $SSH_TARGET"
           scp -i "$HOME/.ssh/deploy_key" -P "$SSH_PORT" -o StrictHostKeyChecking=yes             docker-compose.yml "$SSH_TARGET:$DEPLOY_PATH/docker-compose.yml"
+          # Файл окружения приложения (Н71): содержимое идёт через stdin, на сервере пишется во временный файл
+          # с umask 077 и атомарно заменяет рабочий (mv в той же папке). Значения не попадают в аргументы.
+          $SSH "cd '$DEPLOY_PATH' && umask 077 && cat > .tmp-app-env && chmod 600 .tmp-app-env && mv -f .tmp-app-env .env" < "$RUNNER_TEMP/app-env"
+          rm -f "$RUNNER_TEMP/app-env"
           # Токен передаётся через stdin на время job: образы в GHCR могут быть приватными.
           printf '%s' "$GHCR_TOKEN" | $SSH "docker login ghcr.io -u ${{ github.actor }} --password-stdin"
           # Тег и владелец сохраняются в release.env рядом с compose: ручные pull/up на VPS идут с текущим тегом.
-          $SSH "cd '$DEPLOY_PATH' && echo 'GHCR_OWNER=${OWNER,,}' > release.env && echo 'IMAGE_TAG=${{ github.sha }}' >> release.env && docker compose --env-file release.env pull && docker compose --env-file release.env up -d --remove-orphans"
+          # Н78: токен GHCR не остаётся на VPS — docker logout выполняется и при ошибке pull/up (код возврата сохраняется).
+          rc=0
+          $SSH "cd '$DEPLOY_PATH' && echo 'GHCR_OWNER=${OWNER,,}' > release.env && echo 'IMAGE_TAG=${{ github.sha }}' >> release.env && docker compose --env-file release.env pull && docker compose --env-file release.env up -d --remove-orphans" || rc=$?
+          $SSH "docker logout ghcr.io" || true
+          exit "$rc"
