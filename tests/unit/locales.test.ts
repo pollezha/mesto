@@ -23,7 +23,6 @@ const RU_ONLY = [
   'form.consentLinks.privacy',
   'form.newsletter',
   'form.newsletterLinks.newsletter',
-  'footer.docs',
   'footer.consent',
   'footer.newsletter',
 ]
