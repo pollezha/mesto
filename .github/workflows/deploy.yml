@@ -6,7 +6,12 @@
 #   variables: DEPLOY_ENABLED=true (включает job deploy), DEPLOY_PATH (папка с docker-compose.yml на VPS),
 #              NUXT_PUBLIC_ANALYTICS_ENABLED, NUXT_PUBLIC_GA_ID, NUXT_PUBLIC_YM_ID, NUXT_PUBLIC_SITE_URL (не секреты:
 #              попадают в пререндеренный HTML при сборке образа nginx; пусто — значения по умолчанию).
-# Секреты приложения (SMTP_*, MAIL_*) в CI не нужны: они лежат в файле окружения на VPS.
+# Почта (Н71): job deploy при каждом выкате сам записывает файл окружения приложения на VPS (DEPLOY_PATH, права 600)
+#   из секретов репозитория: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM, MAIL_TO (обязательны),
+#   SMTP_SECURE (необязателен: пусто = false, STARTTLS; true/1 — TLS сразу, обычно порт 465).
+#   Если обязательный секрет пуст, деплой падает до любых изменений на сервере. Значения идут в stdin SSH,
+#   не в аргументах и не в логах. Файл на VPS руками править не нужно: он перезаписывается при выкате.
+#   Секреты нужны только при push в main; pull_request этот workflow не запускает (репозиторий публичный).
 name: deploy
 
 on:
@@ -91,16 +96,58 @@ jobs:
       GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+      # Первым шагом, до любых действий на сервере. Без set -x и без вывода значений.
+      - name: Проверить почтовые секреты и собрать файл окружения
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+        run: |
+          set +x
+          missing=''
+          for name in SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS MAIL_FROM MAIL_TO; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Не заданы секреты репозитория:$missing. Settings → Secrets and variables → Actions. Деплой остановлен, сервер не тронут."
+            exit 1
+          fi
+          # Значения пишутся в одинарных кавычках (в файле окружения compose они буквальные), поэтому
+          # одинарная кавычка и перевод строки внутри значения недопустимы. Сами значения не выводятся.
+          for name in SMTP_HOST SMTP_PORT SMTP_SECURE SMTP_USER SMTP_PASS MAIL_FROM MAIL_TO; do
+            value="${!name}"
+            case "$value" in
+              *"'"*|*$'\n'*|*$'\r'*)
+                echo "::error::Секрет $name содержит одинарную кавычку или перевод строки: так значение не записать. Деплой остановлен."
+                exit 1
+                ;;
+            esac
+          done
+          umask 077
+          out="$RUNNER_TEMP/app-env"
+          : > "$out"
+          for name in SMTP_HOST SMTP_PORT SMTP_SECURE SMTP_USER SMTP_PASS MAIL_FROM MAIL_TO; do
+            printf "%s='%s'\n" "$name" "${!name}" >> "$out"
+          done
       - name: Настроить SSH
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-      - name: Обновить compose-файл на VPS и перезапустить
+      - name: Обновить compose-файл и настройки почты на VPS, перезапустить
         run: |
+          set +x
           SSH="ssh -i $HOME/.ssh/deploy_key -p $SSH_PORT -o StrictHostKeyChecking=yes $SSH_TARGET"
           scp -i "$HOME/.ssh/deploy_key" -P "$SSH_PORT" -o StrictHostKeyChecking=yes             docker-compose.yml "$SSH_TARGET:$DEPLOY_PATH/docker-compose.yml"
+          # Файл окружения приложения (Н71): содержимое идёт через stdin, на сервере пишется во временный файл
+          # с umask 077 и атомарно заменяет рабочий (mv в той же папке). Значения не попадают в аргументы.
+          $SSH "cd '$DEPLOY_PATH' && umask 077 && cat > .tmp-app-env && chmod 600 .tmp-app-env && mv -f .tmp-app-env .env" < "$RUNNER_TEMP/app-env"
+          rm -f "$RUNNER_TEMP/app-env"
           # Токен передаётся через stdin на время job: образы в GHCR могут быть приватными.
           printf '%s' "$GHCR_TOKEN" | $SSH "docker login ghcr.io -u ${{ github.actor }} --password-stdin"
           # Тег и владелец сохраняются в release.env рядом с compose: ручные pull/up на VPS идут с текущим тегом.
