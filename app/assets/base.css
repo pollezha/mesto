@@ -70,6 +70,24 @@ body {
   background-color: var(--color-gray-100);
 }
 
+/* Короткие страницы (404, документы, контакты) на высоком окне заполняют его: футер прижат вниз, под ним нет белой полосы.
+   Высота окна — с учётом zoom (Н50). */
+.site-page > :is(.document-page, .contacts-page) {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh / var(--site-zoom));
+}
+
+@supports (height: 100svh) {
+  .site-page > :is(.document-page, .contacts-page) {
+    min-height: calc(100svh / var(--site-zoom));
+  }
+}
+
+.site-page > :is(.document-page, .contacts-page) > main {
+  flex: 1 0 auto;
+}
+
 /* Шрифт по умолчанию — и в элементах форм (браузер не наследует его сам) */
 button,
 input,
