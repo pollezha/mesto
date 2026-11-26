@@ -46,7 +46,8 @@ function setEnv(env: Record<string, string>) {
 beforeEach(() => {
   resetRateLimit()
   setEnv(ENV)
-  fetchMock = vi.fn(async () => new Response('{"ok":true}', { status: 200 }))
+  // страховка Н70: наружу через fetch ничего не уходит (заявки только по почте)
+  fetchMock = vi.fn()
   vi.stubGlobal('fetch', fetchMock)
   sendMail.mockReset().mockResolvedValue({})
   createTransport.mockClear()
@@ -82,7 +83,7 @@ describe('POST /api/lead', () => {
       ['locale неизвестная', { locale: 'de' }],
     ])('422: %s', async (_t, patch) => {
       expect(await send({ ...valid, ...patch })).toEqual({ status: 422 })
-      expect(fetchMock).not.toHaveBeenCalled()
+      expect(sendMail).not.toHaveBeenCalled()
     })
 
     it('422, если тело не объект', async () => {
@@ -123,6 +124,7 @@ describe('POST /api/lead', () => {
 
     it('не JSON (urlencoded, text/plain) — 415 без отправки, запрос считается в лимит', async () => {
       expect(await processLead(valid, '7.7.7.7', false)).toEqual({ status: 415 })
+      expect(sendMail).not.toHaveBeenCalled()
       expect(fetchMock).not.toHaveBeenCalled()
       for (let i = 0; i < 9; i++) await processLead(valid, '7.7.7.7', false)
       expect(await processLead(valid, '7.7.7.7', false)).toEqual({ status: 429 })
@@ -143,6 +145,7 @@ describe('POST /api/lead', () => {
     it('ловушка срабатывает и при невалидных полях', async () => {
       expect(await send({ name: '', website: 'x' })).toEqual({ status: 200 })
       expect(fetchMock).not.toHaveBeenCalled()
+      expect(sendMail).not.toHaveBeenCalled()
     })
   })
 
@@ -250,6 +253,12 @@ describe('POST /api/lead', () => {
       expect(mailText()).not.toContain('Рассылка')
       expect(mailText()).toContain('Язык: EN')
       expect(mailText().endsWith('Страница: /en/services')).toBe(true)
+    })
+
+    it('описание в 2000 символов целиком попадает в письмо', async () => {
+      const message = 'я'.repeat(2000)
+      await send({ ...valid, message })
+      expect(mailText()).toContain(`Сообщение: ${message}`)
     })
 
     it('page не путь — «—»', async () => {

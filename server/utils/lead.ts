@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer'
 import { serverEnv } from './env'
 
 // Логика /api/lead: «Инфраструктура» → «Обработчик формы /api/lead»; Р18, Р35, Р37, Р42, Р54, Р64.
+// Н70 меняет Р18, Р35 и Р54: каналов больше нет, заявки уходят только на почту.
 // Заявка нигде не сохраняется; в лог не попадают ни поля формы, ни IP, ни тексты ошибок.
 
 export const LEAD_MAX = { name: 100, contact: 100, message: 2000 } as const
