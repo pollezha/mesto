@@ -14,7 +14,9 @@ export default defineNuxtPlugin({
     if (prerendered !== '/404' && prerendered !== '/en/404') return
     const { pathname } = window.location
     if (pathname === prerendered || pathname === `${prerendered}/`) return
-    nuxtApp.payload.path = pathname.replace(/\/+$/, '') || '/'
+    // Повторные слэши схлопываем: /en//evil.example дал бы переключателю href="//evil.example" —
+    // протокол-относительную ссылку на чужой домен (открытый редирект), решение владельца от 26.11.2026 (Н72).
+    nuxtApp.payload.path = pathname.replace(/\/{2,}/g, '/').replace(/\/+$/, '') || '/'
     // Флаг для [...slug].vue: ссылки SSR посчитаны для /404, страницу нужно перерисовать.
     useState('not-found-url-replaced').value = true
   },
