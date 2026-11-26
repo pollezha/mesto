@@ -63,7 +63,7 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
         }}</CaptionHeading>
         <!-- Н64: на < 1024 кейсы — столбик по Figma 35:2474 @380 / 2064:1543 @768 (карусель Н56 снята) -->
         <div class="home__cases">
-          <ul class="home__track">
+          <ul class="home__list">
             <li
               v-for="n in [1, 2, 3, 4] as const"
               :key="n"
@@ -255,28 +255,26 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 }
 /* ---------- Н64 (снимает карусель Н56) — владелец 24.11.2026: на < 1024 «Проекты» — кейсы друг за другом, как в Figma
    35:2474 @380 / 2064:1543 @768: кейс 1 Mobile Featured, кейсы 2–4 Stacked, промежуток --_hm-cases-gap. Разделы по содержимому,
-   без scroll snap и высоты окна (Н56). Н51 остаётся для ≥ 1024 (блок ниже). */
-@media (max-width: 1023px) {
-  .home__projects {
-    scroll-margin-top: var(--_hm-scroll-margin); /* ТЗ «Общие правила» п. 9, Н17 */
-  }
+   без scroll snap и высоты окна (Н56). Н51 остаётся для ≥ 1024 (блок ниже). Это база; на ≥ 1024 правила переопределяются. */
+.home__projects {
+  scroll-margin-top: var(--_hm-scroll-margin); /* ТЗ «Общие правила» п. 9, Н17 */
+}
 
-  .home__track {
-    display: flex;
-    flex-direction: column;
-    gap: var(--_hm-cases-gap); /* 20 / 29 — Figma 35:2474 @380 / 2064:1543 @768 */
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
+.home__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--_hm-cases-gap); /* 20 / 29 — Figma 35:2474 @380 / 2064:1543 @768 */
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 
-  .home__first {
-    display: contents; /* Н60: обёртка «подпись + кейс 1» — только для ≥ 1024 */
-  }
+.home__first {
+  display: contents; /* Н60: обёртка «подпись + кейс 1» — только для ≥ 1024 */
+}
 
-  .home .home__caption-d {
-    display: none;
-  }
+.home .home__caption-d {
+  display: none;
 }
 
 /* ---------- Н61 — владелец 24.11.2026: единый ритм мобильной главной («Единый ритм без фонов»), только < 1024.
@@ -284,55 +282,53 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
    I2064:1582 @768) и один вертикальный интервал между разделами (hero → Проекты → перебивка → Услуги → форма) — --space-72
    (48 @380 / 43 @768). Hero — по содержимому, верхнее поле под навбар. Подписи разделов — «номер — линия — название».
    Нужно подтверждение дизайнера. TODO(question): new Н61 — владелец 24.11.2026: единый ритм мобильной главной */
-@media (max-width: 1023px) {
-  .home {
-    --_hm-m-x: var(--space-28); /* 16 — Figma I2074:2565 @380 */
-    --_hm-rhythm: var(--space-72); /* 48 @380 / 43 @768 — один интервал между разделами */
-    --_hm-pad-x: var(--_hm-m-x);
-    --_hm-sv-pad-x: var(--_hm-m-x);
-    --_hm-gap: var(--space-36); /* подпись → содержимое, 24 @380 / 22 @768 */
-  }
+.home {
+  --_hm-m-x: var(--space-28); /* 16 — Figma I2074:2565 @380 */
+  --_hm-rhythm: var(--space-72); /* 48 @380 / 43 @768 — один интервал между разделами */
+  --_hm-pad-x: var(--_hm-m-x);
+  --_hm-sv-pad-x: var(--_hm-m-x);
+  --_hm-gap: var(--space-36); /* подпись → содержимое, 24 @380 / 22 @768 */
+}
 
-  .home main {
-    display: flex;
-    flex-direction: column;
-    gap: var(--_hm-rhythm);
-    padding-bottom: var(--_hm-rhythm); /* до формы тот же интервал */
-  }
+.home main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--_hm-rhythm);
+  padding-bottom: var(--_hm-rhythm); /* до формы тот же интервал */
+}
 
-  /* Н64: hero — первый экран: ~60 % высоты окна (Figma 35:2469 даёт 598 @380 / 720 @768 с пустотой ≈ 400 px под надписью —
-     оценка по виду, нужно подтверждение дизайнера), надпись по центру под навбаром (зона навбара — --_hm-scroll-margin, Н17);
-     боковое поле — как у разделов */
-  .home__hero {
-    padding: var(--_hm-scroll-margin) var(--_hm-m-x) 0;
-  }
+/* Н64: hero — первый экран: ~60 % высоты окна (Figma 35:2469 даёт 598 @380 / 720 @768 с пустотой ≈ 400 px под надписью —
+   оценка по виду, нужно подтверждение дизайнера), надпись по центру под навбаром (зона навбара — --_hm-scroll-margin, Н17);
+   боковое поле — как у разделов */
+.home__hero {
+  padding: var(--_hm-scroll-margin) var(--_hm-m-x) 0;
+}
 
-  .home .home__hero :deep(.hero-gif) {
-    min-height: 60svh;
-  }
+.home .home__hero :deep(.hero-gif) {
+  min-height: 60svh;
+}
 
-  .home .home__hero :deep(.hero-gif__text) {
-    width: 100%; /* край надписи — поле раздела, как у остальных блоков (Figma: 353 из 380, 680 из 768) */
-  }
+.home .home__hero :deep(.hero-gif__text) {
+  width: 100%; /* край надписи — поле раздела, как у остальных блоков (Figma: 353 из 380, 680 из 768) */
+}
 
-  .home__projects,
-  .home__services {
-    padding: 0 var(--_hm-m-x);
-  }
+.home__projects,
+.home__services {
+  padding: 0 var(--_hm-m-x);
+}
 
-  /* Н65 — владелец 24.11.2026: перебивка — отдельно между «Проектами» и «Услугами», крупно и с воздухом.
-     Кегль — --fs-h3 / --lh-h3 (как надпись hero), поля по сетке --_hm-m-x (16 / 24), вертикальный воздух до соседних
-     разделов = --space-280 (380: 240, 768: 168) — следующая ступень токена после --space-200 (владелец 24.11.2026:
-     больше воздуха), симметрично сверху и снизу; из него вычтен зазор ритма. Высота не прыгает: слово резервируется в Typing.
-     TODO(question): new Н65 */
-  .home .home__typing-d {
-    box-sizing: border-box;
-    width: 100%;
-    padding: calc(var(--space-280) - var(--_hm-rhythm)) var(--_hm-m-x);
-    font-size: var(--fs-h3);
-    line-height: var(--lh-h3);
-    overflow-wrap: anywhere; /* страховка на 360: слово nowrap не вылезает за поле */
-  }
+/* Н65 — владелец 24.11.2026: перебивка — отдельно между «Проектами» и «Услугами», крупно и с воздухом.
+   Кегль — --fs-h3 / --lh-h3 (как надпись hero), поля по сетке --_hm-m-x (16 / 24), вертикальный воздух до соседних
+   разделов = --space-280 (380: 240, 768: 168) — следующая ступень токена после --space-200 (владелец 24.11.2026:
+   больше воздуха), симметрично сверху и снизу; из него вычтен зазор ритма. Высота не прыгает: слово резервируется в Typing.
+   TODO(question): new Н65 */
+.home .home__typing-d {
+  box-sizing: border-box;
+  width: 100%;
+  padding: calc(var(--space-280) - var(--_hm-rhythm)) var(--_hm-m-x);
+  font-size: var(--fs-h3);
+  line-height: var(--lh-h3);
+  overflow-wrap: anywhere; /* страховка на 360: слово nowrap не вылезает за поле */
 }
 
 @media (min-width: 768px) {
@@ -353,21 +349,63 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 
 @media (min-width: 1024px) {
   .home {
-    --_hm-screen-h: 100vh;
+    --_hm-screen-h: calc(100vh / var(--site-zoom)); /* Н50 */
   }
 
   @supports (height: 100svh) {
     .home {
-      --_hm-screen-h: 100svh;
+      --_hm-screen-h: calc(100svh / var(--site-zoom));
     }
+  }
+
+  /* Возврат значений ≥ 1024 после мобильной базы выше (Н61, Н64, Н65): как во фреймах 1024 … 1920 */
+  .home {
+    --_hm-pad-x: var(--space-20); /* 12 — Figma 2064:1540 @768 … 35:2175 @1920 */
+    --_hm-sv-pad-x: var(--space-20);
+    --_hm-gap: var(--space-48);
+  }
+
+  .home main {
+    display: block;
+    padding-bottom: 0;
+  }
+
+  .home__hero {
+    padding: 0;
+  }
+
+  .home .home__hero :deep(.hero-gif__text) {
+    width: calc(var(--_hero-text-width) / var(--site-zoom)); /* как в HeroGif (Н50) */
+  }
+
+  .home__projects {
+    scroll-margin-top: 0; /* Н51: остановка — верх раздела, якорь #projects без поля */
+    padding: var(--_hm-pad-top) var(--_hm-pad-x) var(--_hm-pad-y);
+  }
+
+  .home__services {
+    padding: var(--_hm-sv-pad-y) var(--_hm-sv-pad-x);
+  }
+
+  .home .home__caption-d {
+    display: block;
+  }
+
+  .home .home__typing-d {
+    padding: var(--space-200) var(--space-40); /* как в Typing */
+    font-size: var(--fs-txt-1);
+    line-height: var(--lh-txt-1);
+    overflow-wrap: normal;
   }
 
   .home__stop {
     scroll-snap-align: start;
   }
 
+  /* Футер — остановка по верху: заголовки колонок видны, а выше окна (низкое окно) прокручивается свободно до конца
+     страницы; ниже окна — позиция упирается в конец страницы. */
   .home__footer {
-    scroll-snap-align: end;
+    scroll-snap-align: start;
   }
 
   /* Раздел «Проекты» сам не остановка: он выше окна (4 кейса), и его snap area покрывает окно — браузер разрешает любую
@@ -381,7 +419,7 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
   }
 
   /* кейсы на десктопе — колонка карточек (Н51), список и элементы в раскладке не участвуют */
-  .home__track,
+  .home__list,
   .home__case-item {
     display: contents;
   }
@@ -455,16 +493,6 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 
   .home .home__cta {
     --_cta-pad-top: clamp(12px, calc((var(--_hm-screen-h) - 700px) * 0.3), var(--space-80));
-  }
-
-  .home {
-    --_hm-screen-h: calc(100vh / var(--site-zoom)); /* Н50 */
-  }
-
-  @supports (height: 100svh) {
-    .home {
-      --_hm-screen-h: calc(100svh / var(--site-zoom));
-    }
   }
 }
 </style>
