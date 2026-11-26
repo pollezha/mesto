@@ -1,6 +1,8 @@
 # Инфраструктура → «Деплой». push в main → проверки и сборка → два образа (стадии app и nginx) с тегом sha
 # в GHCR → по SSH на VPS: docker compose pull && docker compose up -d. Откат — запуск предыдущего тега образов.
 #
+# Н75: все actions закреплены полным SHA коммита (комментарий — версия); обновляет Dependabot (.github/dependabot.yml).
+#
 # Нужно от владельца (Settings → Secrets and variables → Actions):
 #   secrets: SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, SSH_KNOWN_HOSTS (вывод ssh-keyscan для VPS), SSH_PORT (необязательно);
 #   variables: DEPLOY_ENABLED=true (включает job deploy), DEPLOY_PATH (папка с docker-compose.yml на VPS),
@@ -33,8 +35,8 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
@@ -52,9 +54,9 @@ jobs:
       # GHCR требует имя в нижнем регистре.
       OWNER: ${{ github.repository_owner }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -62,7 +64,7 @@ jobs:
       - name: Имя владельца строчными
         run: echo "OWNER_LC=${OWNER,,}" >> "$GITHUB_ENV"
       - name: Образ app
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           target: app
@@ -71,7 +73,7 @@ jobs:
           cache-from: type=gha,scope=app
           cache-to: type=gha,scope=app,mode=max
       - name: Образ nginx (страницы пререндерятся при сборке — публичные переменные передаются build args)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           target: nginx
@@ -91,6 +93,10 @@ jobs:
     # (SMTP_*, MAIL_*, см. шапку): без них первый шаг job остановит деплой.
     if: ${{ vars.DEPLOY_ENABLED == 'true' }}
     runs-on: ubuntu-latest
+    # Н78: только чтение репозитория и образов (токен нужен для docker login на VPS).
+    permissions:
+      contents: read
+      packages: read
     env:
       OWNER: ${{ github.repository_owner }}
       SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
@@ -100,7 +106,7 @@ jobs:
       SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
       GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       # Первым шагом, до любых действий на сервере. Без set -x и без вывода значений.
       - name: Проверить почтовые секреты и собрать файл окружения
         env:
@@ -165,4 +171,8 @@ jobs:
           # Токен передаётся через stdin на время job: образы в GHCR могут быть приватными.
           printf '%s' "$GHCR_TOKEN" | $SSH "docker login ghcr.io -u ${{ github.actor }} --password-stdin"
           # Тег и владелец сохраняются в release.env рядом с compose: ручные pull/up на VPS идут с текущим тегом.
-          $SSH "cd '$DEPLOY_PATH' && echo 'GHCR_OWNER=${OWNER,,}' > release.env && echo 'IMAGE_TAG=${{ github.sha }}' >> release.env && docker compose --env-file release.env pull && docker compose --env-file release.env up -d --remove-orphans"
+          # Н78: токен GHCR не остаётся на VPS — docker logout выполняется и при ошибке pull/up (код возврата сохраняется).
+          rc=0
+          $SSH "cd '$DEPLOY_PATH' && echo 'GHCR_OWNER=${OWNER,,}' > release.env && echo 'IMAGE_TAG=${{ github.sha }}' >> release.env && docker compose --env-file release.env pull && docker compose --env-file release.env up -d --remove-orphans" || rc=$?
+          $SSH "docker logout ghcr.io" || true
+          exit "$rc"
