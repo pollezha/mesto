@@ -87,11 +87,14 @@ const base = computed(() => `home.services.blocks.${props.type}`)
 // кадрирование, чем раскрытый (1880×1237); при раскрытии фото «прыгало» — теперь один кадр (раскрытый) в обоих состояниях;
 // services-marketing-closed@* остаются в assets, не используются.
 // Три размера под srcset вместо файлов на каждую из 6 ширин: исходник один, масштабирует object-fit.
-const photos = import.meta.glob<string>('../assets/images/services-*.webp', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-})
+const photos = import.meta.glob<string>(
+  ['../assets/images/services-*.webp', '!../assets/images/services-*-closed@*.webp'],
+  {
+    eager: true,
+    query: '?url',
+    import: 'default',
+  },
+)
 function photoSet(name: string): { srcset: string } {
   const widths: [string, number][] = [
     ['760', 760],
@@ -141,9 +144,16 @@ function revealOpened() {
   scrollFrame = requestAnimationFrame(step)
 }
 function toggle() {
+  const root = rootEl.value
+  if (!isOpen.value && root) {
+    // Навбар показан (пришли снизу) — раскрытый блок отступает от верха на его зону; скрыт — зоны нет.
+    // Класс навбара читаем напрямую: управлять им из блока нельзя (Н48 — окно тишины после клика не меняет его состояние).
+    const nav = document.querySelector('.navbar')
+    const shown = !!nav && !nav.classList.contains('navbar--hidden')
+    root.style.setProperty('--_nav', shown ? 'var(--_hm-scroll-margin, 0px)' : '0px')
+  }
   isOpen.value = !isOpen.value
   if (!isOpen.value) return
-  const root = rootEl.value
   if (!root) return
   if (reduced()) {
     nextTick(revealOpened)
@@ -230,11 +240,14 @@ function toggle() {
   /* Н59 — владелец 24.11.2026: раскрытый блок целиком в окне, фото максимально большое; остальные блоки не сжимаются.
      Высота раскрытого блока = min(высота по макету, окно − поля сверху и снизу), но не меньше шапки + панели;
      фото (фон на весь блок) занимает всё, что остаётся над панелью. Высота окна — с учётом zoom (Н50). */
-  --_vmargin: var(--space-24); /* поле сверху/снизу окна; навбар при прокрутке вниз скрыт */
+  --_vmargin: var(--space-24); /* поле сверху/снизу окна */
+  /* Зона показанного навбара (поле + капсула + поле, как scroll-margin у #form, Н17): страница задаёт --_hm-scroll-margin.
+     Ненулевая только если навбар в момент раскрытия показан (пришли снизу) — тогда название не под навбаром (toggle). */
+  --_nav: 0px;
   --_win: calc(100vh / var(--site-zoom, 1));
   --_open-eff: max(
     calc(var(--_closed-h) + var(--_panel-h)),
-    min(var(--_open-h), calc(var(--_win) - 2 * var(--_vmargin)))
+    min(var(--_open-h), calc(var(--_win) - 2 * var(--_vmargin) - var(--_nav)))
   );
 
   position: relative;
@@ -247,9 +260,9 @@ function toggle() {
   height: calc(var(--_closed-h) + var(--_extra));
   border-radius: var(--_radius);
   overflow: hidden;
-  scroll-margin-top: var(
-    --_vmargin
-  ); /* верх раскрытого блока у верха окна с полем (revealOpened) */
+  scroll-margin-top: calc(
+    var(--_vmargin) + var(--_nav)
+  ); /* верх раскрытого блока у верха окна с полем и зоной показанного навбара (revealOpened) */
   transition: height var(--_ease);
 }
 
@@ -281,7 +294,7 @@ function toggle() {
 .services-block__media {
   /* Н59 — мнение дизайнера 24.11.2026: фото при раскрытии не увеличивается и не сдвигается. Оно всегда размером
      раскрытого блока (cover под итоговую высоту), прижато к верху; блок (overflow: hidden) растёт как шторка и
-     открывает его, закрытый блок показывает верхнюю полосу. Кадр закрытого Marketing — другая картинка, кросс-фейд. */
+     открывает его, закрытый блок показывает верхнюю полосу. Один кадр в обоих состояниях (кросс-фейд закрытого Marketing по Н22 не используется, Н59). */
   position: absolute;
   top: 0;
   left: 0;
@@ -314,7 +327,7 @@ function toggle() {
 }
 
 /* ---------- Шапка ----------
-   Н63 — владелец 24.11.2026: «название качает при открытии». Шапка одной высоты и с одними полями в Default и Opened
+   Н63 — владелец 24.11.2026: «название качает при открытии». TODO(question): new Н63 (кнопка удалена, шапка неподвижна). Шапка одной высоты и с одними полями в Default и Opened
    (как в Default по Figma): название стоит неподвижно, фото раскрытого блока просто продолжается под шапкой. */
 .services-block__head {
   position: relative;
