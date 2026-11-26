@@ -9,8 +9,6 @@ const { processLead, resetRateLimit, takeRateLimit, rateLimitSize, formatLead, R
 
 // server/api/lead.post.ts — «Инфраструктура» → «Обработчик формы /api/lead»; ТЗ → «Форма».
 const ENV = {
-  TELEGRAM_BOT_TOKEN: 'tok-secret',
-  TELEGRAM_CHAT_ID: '42',
   SMTP_HOST: 'smtp.test',
   SMTP_PORT: '465',
   SMTP_USER: 'u',
@@ -65,7 +63,7 @@ afterEach(() => {
 
 const mailArg = (i: number) => sendMail.mock.calls[i]![0] as Record<string, unknown>
 const send = (body: unknown, ip = '1.1.1.1') => processLead(body, ip)
-const tgText = (call = 0) => JSON.parse(fetchMock.mock.calls[call][1].body).text as string
+const mailText = (call = 0) => mailArg(call).text as string
 
 describe('POST /api/lead', () => {
   describe('проверка полей (422)', () => {
@@ -184,54 +182,27 @@ describe('POST /api/lead', () => {
     })
   })
 
-  describe('каналы отправки (Р35)', () => {
-    it('Telegram и SMTP стартуют параллельно: письмо уходит, пока Telegram ещё в полёте', async () => {
-      let releaseTg!: () => void
-      fetchMock.mockImplementation(
-        () => new Promise<Response>((r) => (releaseTg = () => r(new Response('{}')))),
-      )
-      const p = send(valid)
-      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
-      await vi.waitFor(() => expect(sendMail).toHaveBeenCalledTimes(1))
-      releaseTg()
-      expect(await p).toEqual({ status: 200 })
+  describe('отправка только по почте (Н70)', () => {
+    it('SMTP ок — 200, письмо одно, наружу по fetch ничего не уходит', async () => {
+      expect(await send(valid)).toEqual({ status: 200 })
+      expect(sendMail).toHaveBeenCalledTimes(1)
+      expect(fetchMock).not.toHaveBeenCalled()
     })
 
-    it('Telegram ок, SMTP падает — 200', async () => {
-      sendMail.mockRejectedValue(new Error('smtp down'))
-      expect(await send(valid)).toEqual({ status: 200 })
-    })
-
-    it('SMTP ок, Telegram падает (HTTP 500 или сеть) — 200', async () => {
-      fetchMock.mockResolvedValue(new Response('', { status: 500 }))
-      expect(await send(valid)).toEqual({ status: 200 })
-      fetchMock.mockRejectedValue(new Error('network'))
-      expect(await send(valid)).toEqual({ status: 200 })
-    })
-
-    it('оба падают — 502', async () => {
-      fetchMock.mockResolvedValue(new Response('', { status: 400 }))
+    it('SMTP падает — 502', async () => {
       sendMail.mockRejectedValue(new Error('smtp down'))
       expect(await send(valid)).toEqual({ status: 502 })
     })
 
-    it('нет env — 502, без падения и без обращений наружу', async () => {
+    it('SMTP не настроен — 502, без падения и без обращений наружу', async () => {
       setEnv({})
       expect(await send(valid)).toEqual({ status: 502 })
       expect(fetchMock).not.toHaveBeenCalled()
       expect(sendMail).not.toHaveBeenCalled()
     })
 
-    it('задан только Telegram — 200; только SMTP — 200', async () => {
-      setEnv({ TELEGRAM_BOT_TOKEN: 't', TELEGRAM_CHAT_ID: '1' })
-      expect(await send(valid)).toEqual({ status: 200 })
-      setEnv({ SMTP_HOST: 'h', MAIL_FROM: 'a@b.c', MAIL_TO: 'd@e.f' })
-      expect(await send(valid)).toEqual({ status: 200 })
-    })
-
-    it('у запросов есть таймаут (signal) и SMTP-таймауты', async () => {
+    it('SMTP-таймауты и secure заданы', async () => {
       await send(valid)
-      expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal)
       expect(createTransport).toHaveBeenCalledWith(
         expect.objectContaining({
           secure: true,
@@ -243,14 +214,9 @@ describe('POST /api/lead', () => {
   })
 
   describe('формат сообщения (Р54)', () => {
-    it('RU: строки по «Инфраструктуре», без parse_mode, без экранирования', async () => {
+    it('RU: строки по «Инфраструктуре», простой текст, без экранирования', async () => {
       await send(valid)
-      const [url, init] = fetchMock.mock.calls[0]
-      expect(url).toBe('https://api.telegram.org/bottok-secret/sendMessage')
-      const payload = JSON.parse(init.body)
-      expect(payload.parse_mode).toBeUndefined()
-      expect(payload.chat_id).toBe('42')
-      expect(payload.text).toBe(
+      expect(mailArg(0).text).toBe(
         [
           'Новая заявка с mesto.studio',
           'Имя: Анна <b>Иванова</b>',
@@ -263,10 +229,10 @@ describe('POST /api/lead', () => {
       )
     })
 
-    it('письмо: тот же текст, простой текст, тема, получатель', async () => {
+    it('письмо: простой текст, тема, получатель', async () => {
       await send(valid)
       const mail = mailArg(0)
-      expect(mail.text).toBe(tgText())
+      expect(typeof mail.text).toBe('string')
       expect(mail.html).toBeUndefined()
       expect(mail.subject).toBe('Заявка с сайта mesto.studio')
       expect(mail.to).toBe('hello@mesto.test')
@@ -275,20 +241,20 @@ describe('POST /api/lead', () => {
 
     it('пустое сообщение — «—»; «Рассылка: нет» для RU без подписки', async () => {
       await send({ ...valid, message: '  ', newsletter: false })
-      expect(tgText()).toContain('Сообщение: —')
-      expect(tgText()).toContain('Рассылка: нет')
+      expect(mailText()).toContain('Сообщение: —')
+      expect(mailText()).toContain('Рассылка: нет')
     })
 
     it('EN: без строки «Рассылка», «Язык: EN»', async () => {
       await send({ ...valid, locale: 'en', consent: false, page: '/en/services' })
-      expect(tgText()).not.toContain('Рассылка')
-      expect(tgText()).toContain('Язык: EN')
-      expect(tgText().endsWith('Страница: /en/services')).toBe(true)
+      expect(mailText()).not.toContain('Рассылка')
+      expect(mailText()).toContain('Язык: EN')
+      expect(mailText().endsWith('Страница: /en/services')).toBe(true)
     })
 
     it('page не путь — «—»', async () => {
       await send({ ...valid, page: 'http://evil' })
-      expect(tgText().endsWith('Страница: —')).toBe(true)
+      expect(mailText().endsWith('Страница: —')).toBe(true)
     })
 
     it('formatLead не меняет пользовательский текст', () => {
@@ -315,8 +281,7 @@ describe('POST /api/lead', () => {
   })
 
   describe('персональные данные', () => {
-    it('ошибки логируются без ПДн, IP и токена', async () => {
-      fetchMock.mockRejectedValue(new Error('fetch to bottok-secret failed for Анна'))
+    it('ошибки логируются без ПДн и IP', async () => {
       sendMail.mockRejectedValue(new Error('rejected anna@example.com'))
       await send(valid, '9.9.9.9')
       const logged = JSON.stringify([
@@ -325,7 +290,7 @@ describe('POST /api/lead', () => {
         ...warnSpy.mock.calls,
       ])
       expect(errSpy).toHaveBeenCalled()
-      for (const secret of ['Анна', 'anna@example.com', 'ребрендинг', '9.9.9.9', 'tok-secret']) {
+      for (const secret of ['Анна', 'anna@example.com', 'ребрендинг', '9.9.9.9']) {
         expect(logged).not.toContain(secret)
       }
     })

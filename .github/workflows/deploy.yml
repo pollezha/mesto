@@ -6,7 +6,7 @@
 #   variables: DEPLOY_ENABLED=true (включает job deploy), DEPLOY_PATH (папка с docker-compose.yml на VPS),
 #              NUXT_PUBLIC_ANALYTICS_ENABLED, NUXT_PUBLIC_GA_ID, NUXT_PUBLIC_YM_ID, NUXT_PUBLIC_SITE_URL (не секреты:
 #              попадают в пререндеренный HTML при сборке образа nginx; пусто — значения по умолчанию).
-# Секреты приложения (TELEGRAM_*, SMTP_*, MAIL_*) в CI не нужны: они лежат в файле окружения на VPS.
+# Секреты приложения (SMTP_*, MAIL_*) в CI не нужны: они лежат в файле окружения на VPS.
 name: deploy
 
 on:

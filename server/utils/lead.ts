@@ -2,8 +2,7 @@ import nodemailer from 'nodemailer'
 import { serverEnv } from './env'
 
 // Логика /api/lead: «Инфраструктура» → «Обработчик формы /api/lead»; Р18, Р35, Р37, Р42, Р54, Р64.
-// Заявка нигде не сохраняется; в лог не попадают ни поля формы, ни IP, ни тексты ошибок
-// (в URL запроса к Telegram — токен бота, поэтому текст ошибки fetch в лог тоже не пишем).
+// Заявка нигде не сохраняется; в лог не попадают ни поля формы, ни IP, ни тексты ошибок.
 
 export const LEAD_MAX = { name: 100, contact: 100, message: 2000 } as const
 export const RATE_LIMIT = { max: 10, windowMs: 10 * 60 * 1000 } as const
@@ -92,18 +91,6 @@ export function formatLead(lead: LeadInput): string {
 
 const EMAIL_RE = /^[^\s@<>,;"]+@[^\s@<>,;"]+\.[^\s@<>,;"]+$/
 
-async function sendTelegram(text: string): Promise<void> {
-  const { telegramBotToken, telegramChatId } = serverEnv()
-  if (!telegramBotToken || !telegramChatId) throw new Error('not configured')
-  const res = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ chat_id: telegramChatId, text }), // без parse_mode (Р54)
-    signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
-  })
-  if (!res.ok) throw new Error(`status ${res.status}`)
-}
-
 async function sendMail(lead: LeadInput, text: string): Promise<void> {
   const env = serverEnv()
   if (!env.smtpHost || !env.mailFrom || !env.mailTo) throw new Error('not configured')
@@ -134,7 +121,8 @@ export async function processLead(body: unknown, ip: string, isJson = true): Pro
   if (!takeRateLimit(ip)) return { status: 429 }
   if (!isJson) return { status: 415 }
 
-  const trap = body && typeof body === 'object' ? (body as Record<string, unknown>).website : undefined
+  const trap =
+    body && typeof body === 'object' ? (body as Record<string, unknown>).website : undefined
   if (trap !== undefined && trap !== null && trap !== '' && String(trap).trim() !== '') {
     return { status: 200 } // ловушка: бот получает «успех», ничего не уходит
   }
@@ -143,10 +131,12 @@ export async function processLead(body: unknown, ip: string, isJson = true): Pro
   if (!lead) return { status: 422 }
 
   const text = formatLead(lead)
-  const results = await Promise.allSettled([sendTelegram(text), sendMail(lead, text)])
-  const channels = ['telegram', 'smtp']
-  results.forEach((r, i) => {
-    if (r.status === 'rejected') console.error(`[lead] ${channels[i]} failed`)
-  })
-  return { status: results.some((r) => r.status === 'fulfilled') ? 200 : 502 }
+  // TODO(question): new Н70 — заявки только на почту: 200, если письмо ушло; 502, если не ушло или SMTP не настроен
+  try {
+    await sendMail(lead, text)
+  } catch {
+    console.error('[lead] smtp failed')
+    return { status: 502 }
+  }
+  return { status: 200 }
 }
