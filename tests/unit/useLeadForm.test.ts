@@ -135,15 +135,16 @@ describe('useLeadForm', () => {
     })
   })
 
-  it('EN: consent и newsletter уходят false, locale и page из контекста', async () => {
+  it('EN (Н80): consent уходит true после отметки, newsletter — false; locale и page из контекста', async () => {
     locale.value = 'en'
     route.path = '/en/services'
     const f = useLeadForm()
     fill(f)
+    f.values.consent = true
     f.values.newsletter = true
     await f.submit()
     expect(fetchMock.mock.calls[0]?.[1].body).toMatchObject({
-      consent: false,
+      consent: true,
       newsletter: false,
       locale: 'en',
       page: '/en/services',

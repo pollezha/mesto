@@ -1,18 +1,18 @@
 <script setup lang="ts">
 // Демо песочницы для DocumentPage: document — footer.privacy на обеих локалях; document-long — длинное
-// название: footer.consent на RU, footer.privacy на EN (как в PageHeaderDemo); 404 — notFound.*. Служебный файл /__kit, на сайт не попадает.
+// название footer.consent на обеих локалях (как в PageHeaderDemo, Н80); 404 — notFound.*. Служебный файл /__kit, на сайт не попадает.
 import DocumentPage from '~/components/DocumentPage.vue'
 
 const props = withDefaults(defineProps<{ kind?: 'document' | 'document-long' | 'not-found' }>(), {
   kind: 'document',
 })
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 const title = computed(() => {
   if (props.kind === 'not-found') return t('notFound.title')
   if (props.kind === 'document-long')
-    return t(locale.value === 'en' ? 'footer.privacy' : 'footer.consent')
+    return t('footer.consent')
   return t('footer.privacy')
 })
 </script>

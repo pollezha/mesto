@@ -225,7 +225,7 @@ export const kit: KitEntry[] = [
   },
   {
     // Чекбокс с подписью (Type=Checkbox Field); подпись и ссылки собирает компонент по kind из словаря (Р52).
-    // Только RU-форма: на /en/__kit демо показывает служебную пометку. Size — место использования (Form):
+    // Согласие — на RU и EN (Н80); рассылка только RU: на /en/__kit для неё служебная пометка. Size — место использования (Form):
     // Default на ≥ 1024, Small на 768 и 380 (Р72). Ширина образца — ширина варианта в Figma (Default 710, Small 316).
     // Filled — modelValue: true; Error — error: true, снимается отметкой (как в форме, ТЗ → «Форма» п. 2).
     name: 'CheckboxField',
@@ -236,7 +236,7 @@ export const kit: KitEntry[] = [
   {
     // Variant Width выбирает ширина экрана (нижняя контрольная, Р4); Locale — язык страницы
     // (/__kit — RU, /en/__kit — EN). Короткий заголовок — «Услуги» (nav.services), длинный — название
-    // документа (footer.consent на RU, footer.privacy на EN — у EN теперь и footer.consent, Н80). Логотип и Languages — только ≥ 1024.
+    // документа (footer.consent на обеих локалях, Н80). Логотип и Languages — только ≥ 1024.
     name: 'PageHeader',
     figma: '2046:979',
     component: PageHeaderDemo,

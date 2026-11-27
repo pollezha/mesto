@@ -102,7 +102,7 @@ function onSubmit() {
         :disabled="sending"
         :maxlength="LEAD_LIMITS.message"
       />
-      <!-- Н80 — владелец 27.11.2026: на EN чекбокс согласия как первый в RU (эталон — RU-форма своей ширины);
+      <!-- TODO(question): new Н80 — владелец 27.11.2026: на EN чекбокс согласия как первый в RU (эталон — RU-форма своей ширины);
            чекбокс рассылки — только RU -->
       <CheckboxField
         v-model="values.consent"
