@@ -18,8 +18,8 @@ usePageSeo({
   alternates: true,
 })
 
-// Н51 — решение владельца 24.11.2026: каждый раздел главной — один экран (scroll snap по вертикали); с Н56 — только на ≥ 1024,
-// на < 1024 разделы по содержимому.
+// Н51 — решение владельца 24.11.2026, правка 27.11 (предложение дизайнера): на ≥ 1024 мягкая доводка (scroll-snap proximity)
+// только hero → Проекты → перебивка → Услуги → футер; кейсы 2–4 и форма без остановок. На < 1024 разделы по содержимому.
 // Класс на html снимается при уходе с главной (useHead живёт, пока жива страница). TODO(question): new Н51
 useHead({ htmlAttrs: { class: 'is-snap-home' } })
 
@@ -68,7 +68,7 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
               v-for="n in [1, 2, 3, 4] as const"
               :key="n"
               class="home__case-item"
-              :class="n === 1 && 'home__stop-first'"
+              :class="n === 1 && 'home__stop'"
             >
               <!-- Н60: на ≥ 1024 подпись и кейс 1 — один экран (обёртка), на < 1024 обёртка не участвует в раскладке;
                    подпись для десктопа — второй экземпляр (скрыт на < 1024), верхний — для мобильной раскладки -->
@@ -82,7 +82,7 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
                 <CaseCard
                   :n="n"
                   class="home__case"
-                  :class="[`home__case--${n}`, n > 1 && 'home__stop']"
+                  :class="`home__case--${n}`"
                 />
               </div>
             </li>
@@ -103,7 +103,7 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
         </div>
       </section>
     </main>
-    <ContactsCta overlap class="home__cta home__stop" />
+    <ContactsCta overlap class="home__cta" />
     <Footer class="home__footer" />
   </div>
 </template>
@@ -326,9 +326,10 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
 }
 
 /* ---------- Н51 — владелец 24.11.2026: на ≥ 1024 каждый раздел главной — один экран (scroll snap по вертикали) ----------
-   Остановки scroll snap — разделы (.home__stop); высота экрана = высота окна, с учётом zoom (Н50).
-   Раздел выше окна (раскрытый блок услуг, CTA в низком окне) не запирает прокрутку: snap area больше окна — внутри
-   прокручивается свободно. Футер — остановка по верху (Н51, правка 26.11). TODO(question): new Н51 */
+   Правка 27.11 (предложение дизайнера, владелец): доводка (proximity) только до точек .home__stop — hero, экран «Проекты»
+   (подпись + кейс 1, верх раздела = якорь #projects), перебивка, «Услуги» — и до футера. Кейсы 2–4 и форма — без
+   остановок, прокручиваются свободно. Высота экрана = высота окна с учётом zoom (Н50) — только у точек доводки.
+   TODO(question): new Н51 */
 @media (prefers-reduced-motion: reduce) {
   html.is-snap-home {
     scroll-behavior: auto; /* snap остаётся, плавности нет */
@@ -396,15 +397,11 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
     scroll-snap-align: start;
   }
 
-  /* Раздел «Проекты» сам не остановка: он выше окна (4 кейса), и его snap area покрывает окно — браузер разрешает любую
-     позицию внутри, остановки кейсов 2–4 и #projects «плавают». Остановка раздела — кейс 1 с вылетом вверх на резерв
-     (поле + подпись + зазор): область начинается ровно с верха раздела. */
+  /* Раздел «Проекты» целиком не остановка: он выше окна (4 кейса), его snap area покрывает окно и браузер разрешает любую
+     позицию внутри. Точка доводки «Проекты» — экран «подпись + кейс 1» (li кейса 1, он же верх раздела; .home__stop). */
   /* Н60 — владелец 24.11.2026: экран Проекты + кейс 1 по центру окна. Остановка — верх этого экрана (li кейса 1,
      он же верх раздела: у раздела на ≥ 1024 нет верхнего поля); высота = окно, подпись и карточка вместе по центру.
      Окно низкое — содержимое занимает весь экран: подпись у верха (поле --_hm-pad-top), карточка по Н47. TODO(question): new Н60 */
-  .home__stop-first {
-    scroll-snap-align: start;
-  }
 
   /* кейсы на десктопе — колонка карточек (Н51), список и элементы в раскладке не участвуют */
   .home__list,
@@ -412,7 +409,7 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
     display: contents;
   }
 
-  .home__case-item.home__stop-first {
+  .home__case-item.home__stop {
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -434,24 +431,12 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
   .home__cases {
     display: flex;
     flex-direction: column;
-    gap: 0; /* кейсы — экраны со своими вертикальными полями (CaseCard) */
+    gap: var(--_hm-cases-gap); /* Н51 (27.11): кейсы 2–4 — как во фрейме, промежуток 29 @768 (2064:1543), на ≥ 1024 тот же шаг --space-48 */
   }
 
   .home__services {
     justify-content: flex-start; /* Н51/Н59: «Услуги» — экран; от верха, чтобы раскрытие блока не двигало подпись и блоки */
     min-height: var(--_hm-screen-h);
-  }
-
-  /* форма — экран: футер перекрывает низ CTA на --space-overlap, поэтому высота CTA = экран + перекрытие */
-  .home__cta {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-height: calc(var(--_hm-screen-h) - var(--space-overlap));
-  }
-
-  .home__cta :deep(.contacts-cta__inner) {
-    width: 100%;
   }
 
   .home__typing {
@@ -474,19 +459,16 @@ const serviceTypes = ['branding', 'marketing', 'interfaces', 'support'] as const
   .home__services-list {
     gap: clamp(6px, calc((var(--_hm-screen-h) - 760px) * 0.3), var(--_hm-sv-gap));
   }
-
-  .home .home__cta {
-    --_cta-pad-top: clamp(12px, calc((var(--_hm-screen-h) - 700px) * 0.3), var(--space-80));
-  }
 }
 </style>
 
 <style>
 /* Н51: scroll snap — на корне прокрутки главной (класс ставит страница, useHead); на других страницах класса нет.
-   Н56: только на ≥ 1024, на < 1024 разделы по содержимому */
+   Н56: только на ≥ 1024, на < 1024 разделы по содержимому. Правка 27.11: proximity — доводка только у точек (hero, Проекты,
+   перебивка, Услуги, футер), между ними прокрутка свободная */
 @media (min-width: 1024px) {
   html.is-snap-home {
-    scroll-snap-type: y mandatory;
+    scroll-snap-type: y proximity;
   }
 }
 </style>

@@ -202,13 +202,11 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   .case-card {
     --cc-pad-y: var(--space-48);
     --cc-screen-h: calc(100vh / var(--site-zoom)); /* Н51, Н50 */
-    --cc-avail-h: calc(100vh / var(--site-zoom) - 2 * var(--space-48));
   }
 
   @supports (height: 100svh) {
     .case-card {
       --cc-screen-h: calc(100svh / var(--site-zoom));
-      --cc-avail-h: calc(100svh / var(--site-zoom) - 2 * var(--space-48));
     }
   }
 
@@ -260,19 +258,15 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     margin: var(--cc-pad) var(--cc-pad) 0 var(--cc-pad); /* название и год сверху, как до Н62 */
   }
 
-  /* Н51 — владелец 24.11.2026: каждый кейс 2–4 — экран окна. Карточка = высота окна, ряд по центру по вертикали;
-     уменьшается только фото (как у кейса 1): высота = min(высота рамки фрейма как доля ряда, окно − 2 × --space-48),
-     ширина — по пропорции рамки (CaseImage). Если окно высокое — фото как во фрейме, вокруг больше воздуха.
-     --cc-img-h — высота рамки фото своей ширины фрейма (число, без единиц), задаётся ниже по ширинам. */
+  /* Н51, правка 27.11 (предложение дизайнера): кейсы 2–4 — ряд «фото + текст» как во фрейме своей ширины, без высоты окна
+     и без остановок scroll snap; промежутки между кейсами — на странице (--_hm-cases-gap). Фото — рамка фрейма как доля
+     ряда: высота = --cc-img-h × --cc-u. --cc-img-h — высота рамки фото своей ширины фрейма (число), задаётся ниже. */
   .case-card:not(.case-card--1) {
     --cc-u: calc(100cqw / var(--cc-layout));
-    --cc-photo-h: min(calc(var(--cc-img-h) * var(--cc-u)), var(--cc-avail-h));
-    /* то же в процентах ширины ряда: для padding самой карточки (cqw на самом контейнере не работает) */
-    --cc-photo-h-pct: min(calc(var(--cc-img-h) / var(--cc-layout) * 100%), var(--cc-avail-h));
+    --cc-photo-h: calc(var(--cc-img-h) * var(--cc-u));
 
     container-type: inline-size;
     min-height: 0;
-    padding-block: calc((var(--cc-screen-h) - var(--cc-photo-h-pct)) / 2);
   }
 
   .case-card--2 {
@@ -288,7 +282,7 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   }
 
   /* фото — рамка своей ширины фрейма как доля ряда (число --case-image-w, пропорции и радиус — в CaseImage);
-     при нехватке высоты окна рамка укорачивается, картинка кадрируется (Н47: фото не сужается) */
+     рамка как во фрейме */
   .case-card:not(.case-card--1) .case-card__media {
     flex: none;
     aspect-ratio: auto;
