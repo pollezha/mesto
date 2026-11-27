@@ -10,7 +10,7 @@ export type SiteLocale = 'ru' | 'en'
 export interface SitePage {
   /** Путь RU-версии. */
   path: string
-  /** Локали, в которых страница существует (consent и newsletter-consent — только RU). */
+  /** Локали, в которых страница существует (newsletter-consent — только RU). */
   locales: SiteLocale[]
 }
 
@@ -20,7 +20,7 @@ export const sitePages: SitePage[] = [
   { path: '/contacts', locales: ['ru', 'en'] },
   { path: '/cases/pharmacy-rebranding', locales: ['ru', 'en'] },
   { path: '/privacy', locales: ['ru', 'en'] },
-  { path: '/consent', locales: ['ru'] },
+  { path: '/consent', locales: ['ru', 'en'] },
   { path: '/newsletter-consent', locales: ['ru'] },
 ]
 

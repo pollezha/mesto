@@ -30,6 +30,11 @@
     "contact": "Email or Telegram*",
     "message": "Tell us briefly about your project",
     "submit": "Discuss a project",
+    "consent": "I have read the {privacy} and give my {consent}",
+    "consentLinks": {
+      "privacy": "Privacy Policy",
+      "consent": "consent to the processing of my personal data"
+    },
     "required": "This field is required",
     "success": "Thank you! Our manager will be in touch soon.",
     "error": "Something went wrong. Please try again or email hello{'@'}mesto.studio"
@@ -38,6 +43,7 @@
     "contacts": "Contacts",
     "docs": "Documents",
     "privacy": "Privacy Policy",
+    "consent": "Consent to Personal Data Processing",
     "cookies": "Cookie settings"
   },
   "cookie": {

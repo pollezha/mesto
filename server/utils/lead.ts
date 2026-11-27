@@ -168,13 +168,15 @@ export function validateLead(body: unknown): LeadInput | null {
   // Только JSON: булевы значения — только boolean true, строки не принимаются.
   const flag = (v: unknown) => v === true
   const consent = flag(b.consent)
-  if (b.locale === 'ru' && !consent) return null
+  // Н80 — владелец 27.11.2026: согласие обязательно и на EN (без consent: true — 422).
+  if (!consent) return null
   return {
     name: b.name,
     contact: b.contact,
     message,
     consent,
-    newsletter: flag(b.newsletter),
+    // Рассылки на EN нет (ТЗ «Форма»): пришедший newsletter игнорируется
+    newsletter: b.locale === 'ru' && flag(b.newsletter),
     locale: b.locale,
     page: isStr(b.page) && b.page.startsWith('/') ? b.page.slice(0, 200) : '—',
   }

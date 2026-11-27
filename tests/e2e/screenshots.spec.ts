@@ -8,6 +8,7 @@ const PAGES = [
   { name: 'contacts', ru: '/contacts', en: '/en/contacts' },
   { name: 'case', ru: '/cases/pharmacy-rebranding', en: '/en/cases/pharmacy-rebranding' },
   { name: 'privacy', ru: '/privacy', en: '/en/privacy' },
+  { name: 'consent', ru: '/consent', en: '/en/consent' },
   { name: '404', ru: '/__not-found__', en: '/en/__not-found__' },
 ] as const
 
