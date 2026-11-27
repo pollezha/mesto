@@ -32,6 +32,17 @@
 #      (set_real_ip_from + real_ip_header) недопустим: nginx в контейнере увидит адрес прокси, а не посетителя.
 # Эти настройки автоматически не включаются: на неизвестном VPS они могут не запустить Docker или сеть.
 #
+# Сеть и IPv6 (Н84): HostVDS закрывает исходящие SMTP-порты (25, 465, 587) по IPv4, по IPv6 они открыты.
+# Поэтому app и nginx живут в своей сети mesto_net с IPv6 (ULA-подсеть fd4d:6573:746f:1::/64, исходящее — NAT66,
+# работает в Docker 29 по умолчанию) и приложение ходит к SMTP по IPv6 (SMTP_FAMILY=6 в секретах, см. deploy.yml).
+# Сеть названа заново, а не mesto_default: настройки уже созданной сети compose не меняет, а deploy идёт без down.
+# После первого выката с этой сетью старую сеть удалить вручную (контейнеры уже в новой, ошибка «has active
+# endpoints» означает, что что-то ещё к ней подключено):
+#   docker network ls | grep mesto_default
+#   docker network rm mesto_default
+# Первый выкат пересоздаёт app и nginx (сеть другая): пауза сайта несколько секунд, пока стартуют контейнеры.
+# certbot тоже в mesto_net (сервис без networks попал бы в mesto_default, и она бы не исчезла).
+#
 # Логи (Н43): у каждого сервиса ротация json-file, 5 файлов по 10 МБ (до 50 МБ на сервис), чтобы логи не росли без предела.
 name: mesto
 
@@ -49,6 +60,7 @@ services:
       target: app
     restart: unless-stopped
     logging: *logging
+    networks: [mesto_net]
     env_file:
       - path: .env
         required: false
@@ -68,6 +80,7 @@ services:
         NUXT_PUBLIC_YM_ID: ${NUXT_PUBLIC_YM_ID:-}
     restart: unless-stopped
     logging: *logging
+    networks: [mesto_net]
     depends_on:
       - app
     ports:
@@ -82,11 +95,21 @@ services:
     image: certbot/certbot:v5.10.0
     restart: unless-stopped
     logging: *logging
+    networks: [mesto_net]
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-www:/var/www/certbot
     # Продление Let's Encrypt: проверка дважды в сутки; certbot продлевает сертификат за 30 дней до конца срока.
     entrypoint: /bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done'
+
+networks:
+  # Н84: IPv6 для исходящего SMTP. IPv4-подсеть Docker выдаёт сам. Имя не менять без нужды: см. шапку.
+  mesto_net:
+    name: mesto_net
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: fd4d:6573:746f:1::/64
 
 volumes:
   certbot-etc:
