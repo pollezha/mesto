@@ -29,6 +29,19 @@ const { locale } = useI18n()
 // Н25 — решение владельца 20.11.2026: кейс 1 — eager (на 380/768 в первом экране, LCP), остальные lazy.
 const imgLoading = computed(() => props.loading ?? (props.n === 1 ? 'eager' : 'lazy'))
 
+// Н83: ширина карточки кейса 1 в локальных px для расчёта высоты (--cc-w, только ≥ 1024; ниже не используется).
+const el = ref<HTMLElement | { $el: HTMLElement } | null>(null)
+onMounted(() => {
+  if (props.n !== 1) return
+  const node = (el.value && '$el' in el.value ? el.value.$el : el.value) as HTMLElement | null
+  if (!node) return
+  const set = () => node.style.setProperty('--cc-w', `${node.offsetWidth}px`)
+  set()
+  const ro = new ResizeObserver(set)
+  ro.observe(node)
+  onBeforeUnmount(() => ro.disconnect())
+})
+
 const NuxtLinkLocale = resolveComponent('NuxtLinkLocale')
 
 // Р31: страница кейса. Только кейс 1 — ссылка.
@@ -40,6 +53,7 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
   <component
     :is="root"
     v-bind="rootProps"
+    ref="el"
     class="case-card"
     :class="[`case-card--${n}`, { 'case-card--en': locale === 'en' }]"
   >
@@ -223,23 +237,22 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
     --cc-avail-h-1: calc(
       var(--cc-screen-h) - var(--cc-pad-y) - var(--cc-top-reserve, var(--cc-pad-y))
     );
-    --cc-u: calc(100cqw / var(--cc-layout));
+    /* Н83 — владелец 27.11.2026: без cqw — в Safari под zoom они считаются иначе (карточки в 0,8 раза меньше).
+       --cc-w — ширина карточки в локальных px (offsetWidth, ResizeObserver в script); без JS — ширина Layout. */
+    --cc-u: calc(var(--cc-w, calc(var(--cc-layout) * 1px)) / var(--cc-layout));
     --cc-h: min(calc(var(--cc-feat-h) * var(--cc-u)), var(--cc-avail-h-1));
     --cc-pad: calc(var(--cc-feat-text-x) * var(--cc-u));
-    --cc-min-text: calc(
-      34cqw
-    ); /* Н60: минимум колонки текста — доля ширины карточки (название ≤ 2 строк) */
+    --cc-min-text: 34%; /* Н60: минимум колонки текста — доля ширины карточки (название ≤ 2 строк); % ширины, Н83 */
     --cc-img-r: calc(var(--cc-feat-img-w) / var(--cc-feat-img-h)); /* пропорция рамки фото */
     --cc-feat-iw: min(
       calc((var(--cc-h) - 2 * var(--cc-pad)) * var(--cc-img-r)),
-      calc(100cqw - 3 * var(--cc-pad) - var(--cc-min-text))
+      calc(100% - 3 * var(--cc-pad) - var(--cc-min-text))
     );
 
     display: flex;
     flex-direction: row;
     align-items: flex-start;
     gap: 0;
-    container-type: inline-size;
     height: auto;
     padding: 0;
   }
@@ -260,12 +273,8 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
 
   /* Н51, правка 27.11 (предложение дизайнера): кейсы 2–4 — ряд «фото + текст» как во фрейме своей ширины, без высоты окна
      и без остановок scroll snap; промежутки между кейсами — на странице (--_hm-cases-gap). Фото — рамка фрейма как доля
-     ряда: высота = --cc-img-h × --cc-u. --cc-img-h — высота рамки фото своей ширины фрейма (число), задаётся ниже. */
+     ряда: высота = ширина / пропорция (aspect-ratio). --cc-img-h — высота рамки фото своей ширины фрейма (число), задаётся ниже. */
   .case-card:not(.case-card--1) {
-    --cc-u: calc(100cqw / var(--cc-layout));
-    --cc-photo-h: calc(var(--cc-img-h) * var(--cc-u));
-
-    container-type: inline-size;
     min-height: 0;
   }
 
@@ -285,9 +294,10 @@ const rootProps = computed(() => (props.n === 1 ? { to: '/cases/pharmacy-rebrand
      рамка как во фрейме */
   .case-card:not(.case-card--1) .case-card__media {
     flex: none;
-    aspect-ratio: auto;
+    /* Н83: высота из ширины пропорцией рамки фрейма (ширина / --cc-img-h), без единиц контейнера */
+    aspect-ratio: var(--case-image-w) / var(--cc-img-h);
     width: calc(var(--case-image-w) / var(--cc-layout) * 100%);
-    height: var(--cc-photo-h);
+    height: auto;
   }
 
   .case-card .case-card__tag--small {
