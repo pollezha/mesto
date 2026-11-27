@@ -17,15 +17,7 @@ const makeMessages = () =>
 // Словари: «Контент», ТЗ → «Общие правила» п. 6 (неразрывные пробелы), Р52, Р39.
 const NBSP = String.fromCharCode(0xa0)
 // Ключи, которых в EN нет намеренно («Контент»: «—»).
-const RU_ONLY = [
-  'form.consent',
-  'form.consentLinks.consent',
-  'form.consentLinks.privacy',
-  'form.newsletter',
-  'form.newsletterLinks.newsletter',
-  'footer.consent',
-  'footer.newsletter',
-]
+const RU_ONLY = ['form.newsletter', 'form.newsletterLinks.newsletter', 'footer.newsletter']
 
 type Tree = string | Tree[] | { [k: string]: Tree }
 
@@ -109,6 +101,9 @@ describe('locales', () => {
 
     expect(tRu('form.consent', ru.form.consentLinks)).toBe(
       `Я ознакомлен с${NBSP}политикой обработки персональных данных и${NBSP}даю согласие на${NBSP}их обработку`,
+    )
+    expect(tEn('form.consent', en.form.consentLinks)).toBe(
+      'I have read the Privacy Policy and give my consent to the processing of my personal data',
     )
     expect(tRu('form.newsletter', ru.form.newsletterLinks)).toBe(
       `Я хочу подписаться на${NBSP}новости и${NBSP}даю согласие на${NBSP}получение электронных рассылок`,

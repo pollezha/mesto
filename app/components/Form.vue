@@ -4,7 +4,7 @@
 // Size: Default на ≥ 1024, Small на 768 и 380 (Р72). По умолчанию 'auto' — Small ниже 1024 и Default на ≥ 1024
 // медиазапросом (ТЗ → «Общие правила» п. 1, Р4): один DOM, без JS, без скачка после гидратации; 'auto'
 // уходит и детям (Input, CheckboxField, Button). Явные default / small — для песочницы. Locale — язык страницы:
-// в EN чекбоксов нет, высоту многострочного поля по локали знает Input.
+// на EN один чекбокс согласия (Н80), высоту многострочного поля по локали знает Input.
 // Раскладка одинакова на «Контактах» и в CTA главной (паддинги, gap, радиус сняты по обоим, см. стили),
 // ширину задаёт место использования (ContactsCta: max-width 806 на ≥ 1024), Form тянется на 100%.
 import { LEAD_LIMITS, useLeadForm } from '~/composables/useLeadForm'
@@ -102,17 +102,18 @@ function onSubmit() {
         :disabled="sending"
         :maxlength="LEAD_LIMITS.message"
       />
-      <!-- Чекбоксы только в RU-форме («Компоненты» → Form) -->
+      <!-- Н80 — владелец 27.11.2026: на EN чекбокс согласия как первый в RU (эталон — RU-форма своей ширины);
+           чекбокс рассылки — только RU -->
+      <CheckboxField
+        v-model="values.consent"
+        kind="consent"
+        :size="props.size"
+        name="consent"
+        :error="errors.consent"
+        :disabled="sending"
+        required
+      />
       <template v-if="isRu">
-        <CheckboxField
-          v-model="values.consent"
-          kind="consent"
-          :size="props.size"
-          name="consent"
-          :error="errors.consent"
-          :disabled="sending"
-          required
-        />
         <CheckboxField
           v-model="values.newsletter"
           kind="newsletter"

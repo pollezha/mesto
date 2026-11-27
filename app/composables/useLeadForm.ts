@@ -34,7 +34,8 @@ export function useLeadForm() {
     // Формат контакта не проверяется (Р34).
     errors.name = values.name.trim() === ''
     errors.contact = values.contact.trim() === ''
-    errors.consent = isRu.value && !values.consent
+    // Н80: согласие обязательно и на EN (владелец 27.11.2026)
+    errors.consent = !values.consent
     if (errors.name || errors.contact || errors.consent) return
 
     status.value = 'sending'
@@ -43,7 +44,7 @@ export function useLeadForm() {
       name: values.name,
       contact: values.contact,
       message: values.message,
-      consent: ru ? values.consent : false,
+      consent: values.consent,
       newsletter: ru ? values.newsletter : false,
       locale: locale.value,
       page: route.path,

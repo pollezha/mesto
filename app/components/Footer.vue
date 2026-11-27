@@ -60,7 +60,7 @@ const contactItems = computed<ContactItem[]>(() =>
   footerLinks[isRu.value ? 'ru' : 'en'].map((key) => toItem(key)),
 )
 
-// «Документы»: RU — три документа, EN — Privacy Policy (ТЗ → «Маршруты»). В той же вкладке.
+// «Документы»: RU — три документа, EN — Privacy Policy и Consent (Н80, владелец 27.11.2026). В той же вкладке.
 const documents = computed(() =>
   isRu.value
     ? [
@@ -68,7 +68,10 @@ const documents = computed(() =>
         { to: '/consent', label: t('footer.consent') },
         { to: '/newsletter-consent', label: t('footer.newsletter') },
       ]
-    : [{ to: '/privacy', label: t('footer.privacy') }],
+    : [
+        { to: '/privacy', label: t('footer.privacy') },
+        { to: '/consent', label: t('footer.consent') },
+      ],
 )
 </script>
 

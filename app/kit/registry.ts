@@ -236,7 +236,7 @@ export const kit: KitEntry[] = [
   {
     // Variant Width выбирает ширина экрана (нижняя контрольная, Р4); Locale — язык страницы
     // (/__kit — RU, /en/__kit — EN). Короткий заголовок — «Услуги» (nav.services), длинный — название
-    // документа (footer.consent на RU, footer.privacy на EN). Логотип и Languages — только ≥ 1024.
+    // документа (footer.consent на RU, footer.privacy на EN — у EN теперь и footer.consent, Н80). Логотип и Languages — только ≥ 1024.
     name: 'PageHeader',
     figma: '2046:979',
     component: PageHeaderDemo,
@@ -312,7 +312,7 @@ export const kit: KitEntry[] = [
     ],
   },
   {
-    // Locale — язык страницы: RU на /__kit (поля, два чекбокса), EN на /en/__kit (три поля, многострочное ниже).
+    // Locale — язык страницы: RU на /__kit (поля, два чекбокса), EN на /en/__kit (три поля, один чекбокс согласия — Н80, владелец 27.11.2026).
     // Size выбирает место использования: Default на ≥ 1024, Small на 768 и 380 (Р72). Ширина образца — ширина
     // компонента в Figma (Default 806, Small 348). Состояния «пустая отправка», «отправка», «успех» и
     // «ошибка отправки» демо вызывает само (заполняет поля, жмёт кнопку, ответ /api/lead подменён) — demos/FormDemo.vue.

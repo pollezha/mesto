@@ -27,8 +27,8 @@ const items = computed(() =>
     label: code === 'ru' ? t('languages.ru') : t('languages.en'),
     active: locale.value === code,
     // ТЗ → «Маршруты» (Р21, Р60): та же страница в другой локали; на 404 (catch-all) — тот же адрес
-    // с /en/ или без. У RU-документов без EN-версии (/consent, /newsletter-consent — EN-маршрут
-    // выключен, «Инфраструктура» → «Стек») switchLocalePath возвращает '' → /en/privacy (ТЗ → «Маршруты»).
+    // с /en/ или без. У RU-документа без EN-версии (/newsletter-consent — EN-маршрут
+    // выключен, «Инфраструктура» → «Стек»; /consent ↔ /en/consent есть с Н80) switchLocalePath возвращает '' → /en/privacy (ТЗ → «Маршруты»).
     to: switchLocalePath(code) || localePath('/privacy', code),
   })),
 )

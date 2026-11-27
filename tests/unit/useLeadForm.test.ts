@@ -58,7 +58,7 @@ describe('useLeadForm', () => {
     expect(fetchMock).toHaveBeenCalledOnce()
   })
 
-  it('RU: неотмеченное согласие — ошибка; EN — нет', async () => {
+  it('неотмеченное согласие — ошибка и на RU, и на EN (Н80)', async () => {
     const f = useLeadForm()
     fill(f)
     f.values.consent = false
@@ -71,8 +71,13 @@ describe('useLeadForm', () => {
     fill(e)
     e.values.consent = false
     await e.submit()
+    expect(e.errors.consent).toBe(true)
+    expect(fetchMock).not.toHaveBeenCalled()
+    e.values.consent = true
+    await e.submit()
     expect(e.errors.consent).toBe(false)
     expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetchMock.mock.calls[0]?.[1].body).toMatchObject({ consent: true, newsletter: false })
   })
 
   it('clearError снимает ошибку поля и чекбокса (Р51)', async () => {
