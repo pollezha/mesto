@@ -10,7 +10,9 @@
 #              попадают в пререндеренный HTML при сборке образа nginx; пусто — значения по умолчанию).
 # Почта (Н71): job deploy при каждом выкате сам записывает файл окружения приложения на VPS (DEPLOY_PATH, права 600)
 #   из секретов репозитория: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM, MAIL_TO (обязательны),
-#   SMTP_SECURE (необязателен: пусто = false, STARTTLS; true/1 — TLS сразу, обычно порт 465).
+#   SMTP_SECURE (необязателен: пусто = false, STARTTLS; true/1 — TLS сразу, обычно порт 465),
+#   SMTP_FAMILY (необязателен, Н84: пусто = как раньше; 6 — подключаться к SMTP по IPv6. Нужен на HostVDS, где
+#   исходящие SMTP-порты по IPv4 закрыты; контейнеры для этого сидят в сети mesto_net с IPv6, см. docker-compose.yml).
 #   Список обязательных строже приложения: lead.ts требует только SMTP_HOST, MAIL_FROM, MAIL_TO, но почта владельца
 #   работает только с авторизацией, поэтому SMTP_PORT, SMTP_USER и SMTP_PASS тоже обязательны.
 #   Если обязательный секрет пуст, а также если DEPLOY_PATH пуст или не начинается с /, деплой падает до любых
@@ -113,6 +115,7 @@ jobs:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+          SMTP_FAMILY: ${{ secrets.SMTP_FAMILY }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           MAIL_FROM: ${{ secrets.MAIL_FROM }}
@@ -138,7 +141,7 @@ jobs:
           # Значения пишутся в одинарных кавычках (в файле окружения compose они буквальные), поэтому
           # одинарная кавычка, перевод строки и обратная косая черта в конце значения недопустимы
           # (завершающий \ экранирует закрывающую кавычку). Сами значения не выводятся.
-          for name in SMTP_HOST SMTP_PORT SMTP_SECURE SMTP_USER SMTP_PASS MAIL_FROM MAIL_TO; do
+          for name in SMTP_HOST SMTP_PORT SMTP_SECURE SMTP_FAMILY SMTP_USER SMTP_PASS MAIL_FROM MAIL_TO; do
             value="${!name}"
             case "$value" in
               *"'"*|*$'\n'*|*$'\r'*|*'\')
@@ -150,7 +153,7 @@ jobs:
           umask 077
           out="$RUNNER_TEMP/app-env"
           : > "$out"
-          for name in SMTP_HOST SMTP_PORT SMTP_SECURE SMTP_USER SMTP_PASS MAIL_FROM MAIL_TO; do
+          for name in SMTP_HOST SMTP_PORT SMTP_SECURE SMTP_FAMILY SMTP_USER SMTP_PASS MAIL_FROM MAIL_TO; do
             printf "%s='%s'\n" "$name" "${!name}" >> "$out"
           done
       - name: Настроить SSH
