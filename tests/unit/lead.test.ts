@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const sendMail = vi.fn()
-const createTransport = vi.fn(() => ({ sendMail }))
+const createTransport = vi.fn((_opts: Record<string, unknown>) => ({ sendMail }))
 vi.mock('nodemailer', () => ({ default: { createTransport } }))
+const dnsLookup = vi.fn()
+vi.mock('node:dns/promises', () => ({ lookup: dnsLookup }))
 
 const {
   processLead,
@@ -50,7 +52,7 @@ let logSpy: any
 let warnSpy: any
 
 function setEnv(env: Record<string, string>) {
-  for (const k of Object.keys(ENV)) Reflect.deleteProperty(process.env, k)
+  for (const k of [...Object.keys(ENV), 'SMTP_FAMILY']) Reflect.deleteProperty(process.env, k)
   Object.assign(process.env, env)
 }
 
@@ -62,6 +64,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock)
   sendMail.mockReset().mockResolvedValue({})
   createTransport.mockClear()
+  dnsLookup.mockReset().mockResolvedValue({ address: '2a00:1450:4010:c0e::6d', family: 6 })
   errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
   logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
   warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -344,6 +347,76 @@ describe('POST /api/lead', () => {
     it('SMTP падает — 502', async () => {
       sendMail.mockRejectedValue(new Error('smtp down'))
       expect(await send(valid)).toEqual({ status: 502 })
+    })
+
+    describe('SMTP_FAMILY (Н84)', () => {
+      const transportOpts = () => createTransport.mock.calls[0]![0]
+
+      it('6 — host это IPv6-адрес, tls.servername = SMTP_HOST, проверка сертификата не ослаблена', async () => {
+        setEnv({ ...ENV, SMTP_FAMILY: '6' })
+        expect(await send(valid)).toEqual({ status: 200 })
+        expect(dnsLookup).toHaveBeenCalledWith('smtp.test', { family: 6 })
+        expect(transportOpts().host).toBe('2a00:1450:4010:c0e::6d')
+        expect(transportOpts().tls).toEqual({ servername: 'smtp.test' })
+        expect(JSON.stringify(transportOpts())).not.toContain('rejectUnauthorized')
+      })
+
+      it('4 — резолв по IPv4', async () => {
+        dnsLookup.mockResolvedValue({ address: '203.0.113.7', family: 4 })
+        setEnv({ ...ENV, SMTP_FAMILY: '4' })
+        expect(await send(valid)).toEqual({ status: 200 })
+        expect(dnsLookup).toHaveBeenCalledWith('smtp.test', { family: 4 })
+        expect(transportOpts().host).toBe('203.0.113.7')
+        expect(transportOpts().tls).toEqual({ servername: 'smtp.test' })
+      })
+
+      it.each(['', '5', 'abc', ' 6'])(
+        'значение %j считается пустым: поведение прежнее',
+        async (v) => {
+          setEnv({ ...ENV, SMTP_FAMILY: v })
+          expect(await send(valid)).toEqual({ status: 200 })
+          expect(dnsLookup).not.toHaveBeenCalled()
+          expect(transportOpts().host).toBe('smtp.test')
+          expect(transportOpts()).not.toHaveProperty('tls')
+        },
+      )
+
+      it('не задана — поведение прежнее', async () => {
+        expect(await send(valid)).toEqual({ status: 200 })
+        expect(dnsLookup).not.toHaveBeenCalled()
+        expect(transportOpts().host).toBe('smtp.test')
+        expect(transportOpts()).not.toHaveProperty('tls')
+      })
+
+      it('ошибка резолва AAAA — 502, лог без ПДн, письмо не уходит', async () => {
+        setEnv({ ...ENV, SMTP_FAMILY: '6' })
+        dnsLookup.mockRejectedValue(new Error('ENOTFOUND leak-anna@example.com'))
+        expect(await send(valid)).toEqual({ status: 502 })
+        expect(errSpy).toHaveBeenCalledWith('[lead] smtp failed')
+        expect(createTransport).not.toHaveBeenCalled()
+        expect(sendMail).not.toHaveBeenCalled()
+        const logged = [logSpy, warnSpy, errSpy]
+          .flatMap((spy) => spy.mock.calls)
+          .map((args: unknown[]) => args.map(String).join(' '))
+          .join('\n')
+        expect(logged).not.toContain('leak-anna@example.com')
+        expect(logged).not.toContain('ENOTFOUND')
+      })
+
+      it('резолв завис — по тайм-ауту 502, лог без ПДн', async () => {
+        vi.useFakeTimers()
+        try {
+          setEnv({ ...ENV, SMTP_FAMILY: '6' })
+          dnsLookup.mockReturnValue(new Promise(() => {}))
+          const pending = send(valid)
+          await vi.advanceTimersByTimeAsync(8000)
+          expect(await pending).toEqual({ status: 502 })
+          expect(errSpy).toHaveBeenCalledWith('[lead] smtp failed')
+          expect(createTransport).not.toHaveBeenCalled()
+        } finally {
+          vi.useRealTimers()
+        }
+      })
     })
 
     it('SMTP не настроен — 502, без падения и без обращений наружу', async () => {

@@ -9,6 +9,8 @@ export function serverEnv() {
     smtpUser: env.SMTP_USER ?? '',
     smtpPass: env.SMTP_PASS ?? '',
     smtpSecure: env.SMTP_SECURE ?? '',
+    // Н84: '6' / '4' — ходить на SMTP только по этому семейству адресов; всё остальное = пусто
+    smtpFamily: env.SMTP_FAMILY === '6' ? 6 : env.SMTP_FAMILY === '4' ? 4 : null,
     mailFrom: env.MAIL_FROM ?? '',
     mailTo: env.MAIL_TO ?? '',
   }
