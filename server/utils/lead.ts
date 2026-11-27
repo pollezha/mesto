@@ -1,3 +1,4 @@
+import { lookup } from 'node:dns/promises'
 import nodemailer from 'nodemailer'
 import { serverEnv } from './env'
 
@@ -199,9 +200,20 @@ async function sendMail(lead: LeadInput, text: string): Promise<void> {
   const env = serverEnv()
   if (!env.smtpHost || !env.mailFrom || !env.mailTo) throw new Error('not configured')
   const secure = env.smtpSecure === 'true' || env.smtpSecure === '1'
+  // TODO(question): new Н84 — хостинг закрывает исходящие 25/465/587 по IPv4; SMTP_FAMILY=6 шлёт по IPv6.
+  // У nodemailer 10 штатной опции семейства нет (резолвит A и AAAA вместе, IPv4 первым), поэтому при
+  // SMTP_FAMILY адрес резолвим сами, а имя для проверки сертификата (SNI) остаётся SMTP_HOST.
+  // Ошибка резолва уходит в общий catch: 502 и «[lead] smtp failed».
+  let host = env.smtpHost
+  let tls: { servername: string } | undefined
+  if (env.smtpFamily) {
+    host = (await lookup(env.smtpHost, { family: env.smtpFamily })).address
+    tls = { servername: env.smtpHost }
+  }
   // SMTP-клиент nodemailer — решение владельца от 23.11.2026 (Н44)
   const transport = nodemailer.createTransport({
-    host: env.smtpHost,
+    host,
+    ...(tls ? { tls } : {}),
     port: Number(env.smtpPort) || (secure ? 465 : 587),
     secure,
     auth: env.smtpUser ? { user: env.smtpUser, pass: env.smtpPass } : undefined,
