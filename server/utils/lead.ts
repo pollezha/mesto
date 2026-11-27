@@ -196,18 +196,32 @@ export function formatLead(lead: LeadInput): string {
 
 const EMAIL_RE = /^[^\s@<>,;"]+@[^\s@<>,;"]+\.[^\s@<>,;"]+$/
 
+// dns.lookup сам тайм-аута не имеет — ограничиваем тем же сроком, что и SMTP-соединение.
+async function lookupWithTimeout(host: string, family: number) {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('dns timeout')), SEND_TIMEOUT_MS)
+  })
+  try {
+    return await Promise.race([lookup(host, { family }), timeout])
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 async function sendMail(lead: LeadInput, text: string): Promise<void> {
   const env = serverEnv()
   if (!env.smtpHost || !env.mailFrom || !env.mailTo) throw new Error('not configured')
   const secure = env.smtpSecure === 'true' || env.smtpSecure === '1'
   // TODO(question): new Н84 — хостинг закрывает исходящие 25/465/587 по IPv4; SMTP_FAMILY=6 шлёт по IPv6.
-  // У nodemailer 10 штатной опции семейства нет (резолвит A и AAAA вместе, IPv4 первым), поэтому при
-  // SMTP_FAMILY адрес резолвим сами, а имя для проверки сертификата (SNI) остаётся SMTP_HOST.
-  // Ошибка резолва уходит в общий catch: 502 и «[lead] smtp failed».
+  // У nodemailer 10 штатной опции семейства нет: он резолвит A и AAAA вместе и подключается сначала
+  // по IPv6, потом по IPv4 (если у контейнера есть IPv6-интерфейс). SMTP_FAMILY делает выбор
+  // предсказуемым и не зависящим от этой логики: адрес резолвим сами, имя для проверки сертификата
+  // (SNI) остаётся SMTP_HOST. Ошибка или тайм-аут резолва уходят в общий catch: 502 и «[lead] smtp failed».
   let host = env.smtpHost
   let tls: { servername: string } | undefined
   if (env.smtpFamily) {
-    host = (await lookup(env.smtpHost, { family: env.smtpFamily })).address
+    host = (await lookupWithTimeout(env.smtpHost, env.smtpFamily)).address
     tls = { servername: env.smtpHost }
   }
   // SMTP-клиент nodemailer — решение владельца от 23.11.2026 (Н44)

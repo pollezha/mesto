@@ -387,6 +387,27 @@ describe('POST /api/lead', () => {
         expect(errSpy).toHaveBeenCalledWith('[lead] smtp failed')
         expect(createTransport).not.toHaveBeenCalled()
         expect(sendMail).not.toHaveBeenCalled()
+        const logged = [logSpy, warnSpy, errSpy]
+          .flatMap((spy) => spy.mock.calls)
+          .map((args: unknown[]) => args.map(String).join(' '))
+          .join('\n')
+        expect(logged).not.toContain('leak-anna@example.com')
+        expect(logged).not.toContain('ENOTFOUND')
+      })
+
+      it('резолв завис — по тайм-ауту 502, лог без ПДн', async () => {
+        vi.useFakeTimers()
+        try {
+          setEnv({ ...ENV, SMTP_FAMILY: '6' })
+          dnsLookup.mockReturnValue(new Promise(() => {}))
+          const pending = send(valid)
+          await vi.advanceTimersByTimeAsync(8000)
+          expect(await pending).toEqual({ status: 502 })
+          expect(errSpy).toHaveBeenCalledWith('[lead] smtp failed')
+          expect(createTransport).not.toHaveBeenCalled()
+        } finally {
+          vi.useRealTimers()
+        }
       })
     })
 
