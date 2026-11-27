@@ -71,7 +71,11 @@ function onDiscuss(event: MouseEvent) {
 
 // ---------- Бургер: Mobile ⇄ Mobile-op ----------
 // Н14 — решение владельца 20.11.2026: доступное имя бургера nav.menu = «Меню» / «Menu»
-function toggleMenu() {
+// Н81 — владелец 27.11.2026: без обводки фокуса при открытии меню касанием.
+// event.detail === 0 — «клик» с клавиатуры (Enter/Space); касание и мышь дают detail >= 1 (надёжно и в iOS Safari).
+let openedByKeyboard = false
+function toggleMenu(event?: MouseEvent) {
+  openedByKeyboard = event?.detail === 0
   open.value = !open.value
 }
 
@@ -132,8 +136,12 @@ watch(
   (value) => {
     if (!value || !import.meta.client) return
     const focusFirst = () => {
-      const first = panel.value?.querySelector<HTMLElement>('a[href]')
-      first?.focus()
+      // Касание/мышь: фокус на саму панель (tabindex -1, без обводки) — ловушка Tab остаётся в навбаре;
+      // клавиатура: первый пункт с видимой обводкой (Р46).
+      const first = openedByKeyboard
+        ? panel.value?.querySelector<HTMLElement>('a[href]')
+        : panel.value
+      first?.focus({ preventScroll: true })
       return Boolean(first && panel.value?.contains(document.activeElement))
     }
     if (!focusFirst()) setTimeout(focusFirst, 50)
@@ -317,7 +325,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Desktop: строка в капсуле; Mobile-op: панель под капсулой -->
-    <nav :id="menuId" ref="panel" class="navbar__panel">
+    <nav :id="menuId" ref="panel" class="navbar__panel" tabindex="-1">
       <ul class="navbar__list">
         <li>
           <a :href="projectsTo" class="navbar__item" @click="onProjects">
@@ -406,6 +414,11 @@ onBeforeUnmount(() => {
   right: auto;
   left: auto;
   margin-inline: var(--_nav-side);
+}
+
+/* Н81: фокус на панели при открытии касанием — без обводки */
+.navbar__panel:focus {
+  outline: none;
 }
 
 /* ---------- Капсула и панель < 1024: фон непрозрачный, тень («Токены» → «Эффекты») ----------
