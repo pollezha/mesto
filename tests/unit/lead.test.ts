@@ -11,7 +11,8 @@ const {
   takeSendSlot,
   rateLimitSize,
   rateLimitKey,
-  isInternalIp,
+  formatLead,
+  validateLead,
   formatLead,
   RATE_LIMIT,
   SEND_CAP,
@@ -123,8 +124,15 @@ describe('POST /api/lead', () => {
       expect(await send({ ...valid, consent: undefined })).toEqual({ status: 422 })
     })
 
-    it('EN: consent не нужен', async () => {
-      expect(await send({ ...valid, locale: 'en', consent: false })).toEqual({ status: 200 })
+    // Н80 — владелец 27.11.2026: согласие обязательно и на EN
+    it('EN: без consent=true — 422, с consent=true — 200', async () => {
+      expect(await send({ ...valid, locale: 'en', consent: false })).toEqual({ status: 422 })
+      expect(await send({ ...valid, locale: 'en', consent: undefined })).toEqual({ status: 422 })
+      expect(await send({ ...valid, locale: 'en' })).toEqual({ status: 200 })
+    })
+
+    it('EN: newsletter=true игнорируется (false)', () => {
+      expect(validateLead({ ...valid, locale: 'en', newsletter: true })?.newsletter).toBe(false)
     })
 
     it("строки 'true' / 'on' в consent — 422 (только boolean)", async () => {
@@ -390,7 +398,7 @@ describe('POST /api/lead', () => {
     })
 
     it('EN: без строки «Рассылка», «Язык: EN»', async () => {
-      await send({ ...valid, locale: 'en', consent: false, page: '/en/services' })
+      await send({ ...valid, locale: 'en', page: '/en/services' })
       expect(mailText()).not.toContain('Рассылка')
       expect(mailText()).toContain('Язык: EN')
       expect(mailText().endsWith('Страница: /en/services')).toBe(true)
